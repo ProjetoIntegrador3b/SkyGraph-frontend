@@ -11,7 +11,9 @@ services:
     networks:
       - skygraph-network
 
+# Shared with the backend stack. Create it once with:
+#   docker network create skygraph-network
 networks:
   skygraph-network:
     name: skygraph-network
-    driver: bridge
+    external: true
