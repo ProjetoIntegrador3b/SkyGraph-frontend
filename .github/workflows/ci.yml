@@ -1,0 +1,111 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+# A new push to the same PR cancels the previous, still-running check.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Lint, test & build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Formatting runs FIRST and never fails the job, so the developer always
+      # sees the warning even when a later blocking step fails.
+      - name: Check formatting (warning only)
+        id: format
+        run: |
+          if npx prettier --check .; then
+            echo "formatted=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "formatted=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Warn about unformatted files
+        if: steps.format.outputs.formatted == 'false'
+        run: |
+          files="$(npx prettier --list-different . || true)"
+          echo "::warning title=Prettier::Some files are not formatted. Run 'npm run format'."
+          while IFS= read -r file; do
+            [ -n "$file" ] && echo "::warning file=${file},title=Prettier::Not formatted. Run 'npm run format'."
+          done <<< "$files"
+          {
+            echo "### :warning: Formatting (non-blocking)"
+            echo
+            echo "These files are not Prettier-formatted:"
+            echo
+            echo '```'
+            echo "$files"
+            echo '```'
+            echo
+            echo "Run \`npm run format\` to fix. This does **not** block the pull request."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+  docker:
+    name: Docker image builds
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v4
+
+      # Build only - nothing is pushed to a registry.
+      - name: Build image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: false
+          load: true
+          tags: skygraph-frontend:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Smoke test the container
+        run: |
+          docker run -d --name ci-frontend -p 8080:80 skygraph-frontend:ci
+          for _ in $(seq 1 30); do
+            if curl -sf -o /dev/null http://localhost:8080/; then break; fi
+            sleep 1
+          done
+          echo "--- / ---"
+          curl -sf -o /dev/null -w '%{http_code}\n' http://localhost:8080/
+          echo "--- /home (SPA fallback) ---"
+          curl -sf -o /dev/null -w '%{http_code}\n' http://localhost:8080/home
+          docker rm -f ci-frontend
