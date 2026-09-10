@@ -123,6 +123,53 @@ src/
 Adding a page means creating a component in `src/pages/` and registering a
 `<Route>` in `src/App.tsx`.
 
+The route search screen is available at `/home`. It sends a `POST` request to
+`/api/routes` with the following payload:
+
+```json
+{
+  "origin": "GRU",
+  "destination": "JFK",
+  "departureDate": "2030-06-10",
+  "returnDate": "2030-06-20"
+}
+```
+
+The endpoint can be changed without modifying the UI by defining
+`VITE_API_ROUTES_URL`, for example in a local `.env` file:
+
+```bash
+VITE_API_ROUTES_URL=http://localhost:8000/api/routes
+```
+
+### Local mock data
+
+For visual and operational testing before the backend is available, create a
+`.env.local` file in the project root. This file is ignored by Git and will not
+be included in commits:
+
+```bash
+VITE_USE_MOCK_API=true
+```
+
+When this variable is enabled, the frontend returns local sample data after a
+short delay and does not make a network request. Restart `npm run dev` after
+changing environment variables. To connect to the backend again, remove the
+variable or set it to `false`.
+
+The expected response contains one result for each criterion. A result has
+`price`, `connections` and `duration`; a criterion may be `null` when no route
+is available:
+
+```json
+{
+  "price": { "price": 450, "connections": 2, "duration": "8h 20min" },
+  "connections": { "price": 620, "connections": 1, "duration": "9h 10min" },
+  "time": { "price": 900, "connections": 2, "duration": "6h 45min" },
+  "absolute": { "price": 500, "connections": 1, "duration": "7h 30min" }
+}
+```
+
 ---
 
 ## Testing
