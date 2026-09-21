@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 
 interface DateRangePickerProps {
   departureDate: string
@@ -73,26 +73,11 @@ export default function DateRangePicker({
   const [visibleMonth, setVisibleMonth] = useState(startOfMonth(initialMonth))
   const [open, setOpen] = useState(false)
   const [selectingReturn, setSelectingReturn] = useState(false)
-  const pickerRef = useRef<HTMLDivElement>(null)
   const today = getToday()
   const months = useMemo(
     () => [visibleMonth, addMonths(visibleMonth, 1)],
     [visibleMonth],
   )
-
-  useEffect(() => {
-    function closeOnOutsideClick(event: MouseEvent) {
-      if (
-        pickerRef.current &&
-        !pickerRef.current.contains(event.target as Node)
-      ) {
-        setOpen(false)
-      }
-    }
-
-    document.addEventListener('mousedown', closeOnOutsideClick)
-    return () => document.removeEventListener('mousedown', closeOnOutsideClick)
-  }, [])
 
   function chooseDate(date: Date) {
     const value = dateToKey(date)
@@ -115,7 +100,7 @@ export default function DateRangePicker({
   }
 
   return (
-    <div className="date-picker" ref={pickerRef}>
+    <div className="date-picker">
       <div className="date-picker__fields">
         <div className="field">
           <label htmlFor="departure-date-trigger">Ida</label>
@@ -148,7 +133,16 @@ export default function DateRangePicker({
       </div>
 
       {open && (
-        <div className="calendar-backdrop">
+        <div
+          className="calendar-backdrop"
+          onMouseDown={(event) => {
+            // The backdrop covers the viewport, so a press that lands on it
+            // rather than bubbling up from the popover is a click outside.
+            if (event.target === event.currentTarget) {
+              setOpen(false)
+            }
+          }}
+        >
           <div
             className="calendar-popover"
             role="dialog"
