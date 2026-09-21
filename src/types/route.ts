@@ -1,5 +1,3 @@
-export type RouteCriterion = 'price' | 'connections' | 'time' | 'absolute'
-
 export interface RouteLeg {
   origin: string
   destination: string
@@ -14,10 +12,7 @@ export interface RouteResult {
 }
 
 export interface RouteSearchResponse {
-  price: RouteResult | null
-  connections: RouteResult | null
-  time: RouteResult | null
-  absolute: RouteResult | null
+  route: RouteResult | null
 }
 
 export interface RouteSearchRequest {

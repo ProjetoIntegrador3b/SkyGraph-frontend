@@ -6,25 +6,10 @@ export function getMockRoutes(
   void request
 
   return {
-    price: {
+    route: {
       price: 450,
       connections: 2,
       duration: '8h 20min',
-    },
-    connections: {
-      price: 620,
-      connections: 1,
-      duration: '9h 10min',
-    },
-    time: {
-      price: 900,
-      connections: 2,
-      duration: '6h 45min',
-    },
-    absolute: {
-      price: 500,
-      connections: 1,
-      duration: '7h 30min',
     },
   }
 }

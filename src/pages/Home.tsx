@@ -107,8 +107,8 @@ export default function Home() {
         <p className="eyebrow">Planeje com inteligência</p>
         <h1 id="page-title">Encontre a melhor rota para sua viagem</h1>
         <p className="hero__description">
-          Conecte aeroportos, compare possibilidades e descubra a rota ideal
-          para o seu próximo destino.
+          Conecte aeroportos e descubra a rota mais barata para o seu próximo
+          destino.
         </p>
 
         <RouteSearchForm
@@ -138,18 +138,15 @@ export default function Home() {
           ref={resultsRef}
         >
           <div className="results__heading">
-            <p className="eyebrow">Resultados</p>
+            <p className="eyebrow">Resultado</p>
             <h2 id="results-title">
-              Rotas de {origin.trim().toUpperCase()} para{' '}
+              Rota de {origin.trim().toUpperCase()} para{' '}
               {destination.trim().toUpperCase()}
             </h2>
           </div>
 
           <div className="route-grid">
-            <RouteCard criterion="price" route={results.price} />
-            <RouteCard criterion="connections" route={results.connections} />
-            <RouteCard criterion="time" route={results.time} />
-            <RouteCard criterion="absolute" route={results.absolute} />
+            <RouteCard route={results.route} />
           </div>
         </section>
       )}

@@ -21,7 +21,7 @@ describe('Home', () => {
     expect(screen.getByLabelText('Ida')).toBeInTheDocument()
     expect(screen.getByLabelText('Volta')).toBeInTheDocument()
     expect(
-      screen.getByRole('button', { name: 'Buscar melhores rotas' }),
+      screen.getByRole('button', { name: 'Buscar melhor rota' }),
     ).toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: 'Ativar modo claro' }),
@@ -40,13 +40,10 @@ describe('Home', () => {
     expect(localStorage.getItem('skygraph-theme')).toBe('light')
   })
 
-  it('displays the best routes returned by the API', async () => {
+  it('displays the cheapest route returned by the API', async () => {
     vi.stubEnv('VITE_USE_MOCK_API', 'false')
     const response = {
-      price: { price: 450, connections: 2, duration: '8h 20min' },
-      connections: { price: 620, connections: 1, duration: '9h 10min' },
-      time: { price: 900, connections: 2, duration: '6h 45min' },
-      absolute: { price: 500, connections: 1, duration: '7h 30min' },
+      route: { price: 450, connections: 2, duration: '8h 20min' },
     }
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(JSON.stringify(response), { status: 200 }),
@@ -57,24 +54,31 @@ describe('Home', () => {
     await userEvent.type(screen.getByLabelText('Origem'), 'GRU')
     await userEvent.type(screen.getByLabelText('Destino'), 'JFK')
     await userEvent.click(screen.getByLabelText('Ida'))
+    // Page forward one month so the days picked below are always in the
+    // future -- days before today are disabled and would not register.
+    await userEvent.click(screen.getByRole('button', { name: 'Próximo mês' }))
     await userEvent.click(screen.getAllByRole('button', { name: /15 de/ })[0])
     await userEvent.click(screen.getAllByRole('button', { name: /20 de/ })[0])
     await userEvent.click(
-      screen.getByRole('button', { name: 'Buscar melhores rotas' }),
+      screen.getByRole('button', { name: 'Buscar melhor rota' }),
     )
 
     expect(
-      await screen.findByRole('heading', { name: 'Melhor preço' }),
+      await screen.findByRole('heading', { name: 'Melhor rota' }),
     ).toBeInTheDocument()
+    expect(screen.getByText('8h 20min')).toBeInTheDocument()
+
+    // Price is the only weight: no per-criterion cards are rendered.
     expect(
-      screen.getByRole('heading', { name: 'Menos conexões' }),
-    ).toBeInTheDocument()
+      screen.queryByRole('heading', { name: 'Menos conexões' }),
+    ).not.toBeInTheDocument()
     expect(
-      screen.getByRole('heading', { name: 'Menor tempo' }),
-    ).toBeInTheDocument()
+      screen.queryByRole('heading', { name: 'Menor tempo' }),
+    ).not.toBeInTheDocument()
     expect(
-      screen.getByRole('heading', { name: 'Melhor rota absoluta' }),
-    ).toBeInTheDocument()
+      screen.queryByRole('heading', { name: 'Melhor rota absoluta' }),
+    ).not.toBeInTheDocument()
+
     expect(fetch).toHaveBeenCalledWith(
       '/api/routes',
       expect.objectContaining({

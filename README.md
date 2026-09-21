@@ -14,13 +14,14 @@ Part of the SkyGraph system:
 
 ## What the system does
 
-The user picks an **origin** and a **destination** airport. The backend searches a
-graph of airports and flights and returns the _optimal_ route — scored against
-several weights rather than distance alone:
+The user picks an **origin** and a **destination** airport plus the travel dates.
+The backend searches a graph of airports and flights and returns the **single
+cheapest route** for that search.
 
-- **Price** — total ticket cost across all legs
-- **Number of connections** — fewer stops is generally preferable
-- **Total time** — flight duration plus layovers
+**Price is the only weight.** The route is chosen by total ticket cost across all
+legs — nothing else. The number of connections and the total travel time are shown
+alongside the result as information about the chosen route, but they do not
+influence which route is selected.
 
 Airports are stored as nodes and flights as relationships in a Neo4j graph
 database, which is what makes this a traversal problem rather than a table join.
@@ -157,16 +158,12 @@ short delay and does not make a network request. Restart `npm run dev` after
 changing environment variables. To connect to the backend again, remove the
 variable or set it to `false`.
 
-The expected response contains one result for each criterion. A result has
-`price`, `connections` and `duration`; a criterion may be `null` when no route
-is available:
+The response contains the one cheapest route. It has `price`, `connections` and
+`duration`; `route` is `null` when no route is available for the search:
 
 ```json
 {
-  "price": { "price": 450, "connections": 2, "duration": "8h 20min" },
-  "connections": { "price": 620, "connections": 1, "duration": "9h 10min" },
-  "time": { "price": 900, "connections": 2, "duration": "6h 45min" },
-  "absolute": { "price": 500, "connections": 1, "duration": "7h 30min" }
+  "route": { "price": 450, "connections": 2, "duration": "8h 20min" }
 }
 ```
 

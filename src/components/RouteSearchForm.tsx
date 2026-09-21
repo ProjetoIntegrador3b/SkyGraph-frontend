@@ -74,7 +74,7 @@ export default function RouteSearchForm({
             Buscando voos...
           </>
         ) : (
-          'Buscar melhores rotas'
+          'Buscar melhor rota'
         )}
       </button>
       {loading && (
@@ -86,7 +86,7 @@ export default function RouteSearchForm({
             <span className="flight-loading__plane">✈</span>
           </div>
           <span>
-            Procurando as melhores rotas
+            Procurando a melhor rota
             <span className="loading-dots" aria-hidden="true">
               ...
             </span>

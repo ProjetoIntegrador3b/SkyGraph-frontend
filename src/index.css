@@ -661,7 +661,7 @@ button:disabled {
 
 .route-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   gap: 1rem;
   margin-top: 1.5rem;
 }
@@ -687,7 +687,7 @@ button:disabled {
   font-size: 1.25rem;
 }
 
-.route-card__criterion {
+.route-card__label {
   color: var(--muted);
   font-size: 0.75rem;
   font-weight: 800;
@@ -745,10 +745,6 @@ button:disabled {
   }
 
   .route-search-form,
-  .route-grid {
-    grid-template-columns: 1fr;
-  }
-
   .date-picker__fields,
   .calendar-months {
     grid-template-columns: 1fr;

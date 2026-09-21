@@ -1,23 +1,15 @@
-import type { RouteCriterion, RouteResult } from '../types/route'
+import type { RouteResult } from '../types/route'
 
 interface RouteCardProps {
-  criterion: RouteCriterion
   route: RouteResult | null
 }
 
-const criterionLabels: Record<RouteCriterion, string> = {
-  price: 'Melhor preço',
-  connections: 'Menos conexões',
-  time: 'Menor tempo',
-  absolute: 'Melhor rota absoluta',
-}
-
-export default function RouteCard({ criterion, route }: RouteCardProps) {
+export default function RouteCard({ route }: RouteCardProps) {
   return (
     <article className="route-card">
       <div className="route-card__heading">
-        <span className="route-card__criterion">Por peso</span>
-        <h3>{criterionLabels[criterion]}</h3>
+        <span className="route-card__label">Por preço</span>
+        <h3>Melhor rota</h3>
       </div>
 
       {route ? (
@@ -42,7 +34,7 @@ export default function RouteCard({ criterion, route }: RouteCardProps) {
         </dl>
       ) : (
         <p className="route-card__empty">
-          Nenhuma rota disponível para este critério.
+          Nenhuma rota disponível para esta busca.
         </p>
       )}
     </article>

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { getMockRoutes } from './mockRoutes'
 
 describe('mock route data', () => {
-  it('provides one route for every search criterion', () => {
+  it('provides the cheapest route for the search', () => {
     const routes = getMockRoutes({
       origin: 'GRU',
       destination: 'JFK',
@@ -10,9 +10,7 @@ describe('mock route data', () => {
       returnDate: '2030-06-20',
     })
 
-    expect(routes.price).not.toBeNull()
-    expect(routes.connections).not.toBeNull()
-    expect(routes.time).not.toBeNull()
-    expect(routes.absolute).not.toBeNull()
+    expect(routes.route).not.toBeNull()
+    expect(routes.route?.price).toBe(450)
   })
 })
