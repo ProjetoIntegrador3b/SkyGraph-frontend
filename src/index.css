@@ -164,8 +164,11 @@ input {
   transition: background 500ms ease;
 }
 
+/* Decorative ring. It is drawn over the form, so it must let clicks and taps
+   through to the fields and buttons underneath. */
 .hero::after {
   position: absolute;
+  pointer-events: none;
   right: -4rem;
   bottom: -7rem;
   width: 19rem;
@@ -309,6 +312,7 @@ input {
 .date-trigger {
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   gap: 0.5rem;
   width: 100%;
   min-height: 3.1rem;
@@ -414,6 +418,7 @@ input {
 
 .calendar-navigation {
   display: flex;
+  flex-shrink: 0;
   gap: 0.4rem;
 }
 
@@ -877,7 +882,6 @@ button:disabled {
 
 .route-globe__canvas {
   width: 100%;
-  min-height: 420px;
   cursor: grab;
 }
 
@@ -928,18 +932,37 @@ button:disabled {
   }
 
   .route-search-form,
-  .date-picker__fields,
   .calendar-popover {
     padding: 1rem;
   }
 
-  .route-search-form button {
+  /* One field per row: origin, destination, dates, then the button. */
+  .route-search-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* Only the search button: the form also holds the calendar and the date
+     × buttons, which must keep their own sizes. */
+  .route-search-form > button[type='submit'] {
+    width: 100%;
+  }
+
+  /* Never wider than the field, so it stays on screen. */
+  .airport-options {
     width: 100%;
   }
 
   .flight-loading {
     align-items: flex-start;
     flex-direction: column;
+  }
+}
+
+/* Phones: a chosen date with its × needs the full width, so Ida and Volta
+   stack instead of sharing a row. */
+@media (max-width: 480px) {
+  .date-picker__fields {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
