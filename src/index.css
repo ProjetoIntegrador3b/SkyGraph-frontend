@@ -866,6 +866,40 @@ button:disabled {
   }
 }
 
+.route-globe {
+  margin-top: 1.5rem;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  background: radial-gradient(circle at 50% 40%, #12264a 0%, #060d1a 75%);
+  box-shadow: 0 0.75rem 2rem rgb(23 42 82 / 12%);
+}
+
+.route-globe__canvas {
+  width: 100%;
+  min-height: 420px;
+  cursor: grab;
+}
+
+.route-globe__canvas:active {
+  cursor: grabbing;
+}
+
+.route-globe__hint {
+  margin: 0;
+  padding: 0.6rem 1rem 0.8rem;
+  color: #9bacc0;
+  font-size: 0.8rem;
+  text-align: center;
+}
+
+.route-globe__loading {
+  margin: 1.5rem 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  text-align: center;
+}
+
 .route-card__empty {
   margin-bottom: 0;
   color: var(--muted);

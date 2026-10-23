@@ -4,6 +4,13 @@ import { afterEach, beforeEach, vi } from 'vitest'
 import { mockApi } from '../test/api'
 import Home from './Home'
 
+// jsdom has no WebGL; stand in for the globe and expose what it receives.
+vi.mock('../components/RouteGlobe', () => ({
+  default: ({ route }: { route: { legs: unknown[] } }) => (
+    <div data-testid="route-globe" data-legs={route.legs.length} />
+  ),
+}))
+
 type Dates = { departure?: number; return?: number }
 
 // Fills the airports, picks the given days of next month (always in the
@@ -212,5 +219,25 @@ describe('Home', () => {
     await userEvent.click(screen.getByLabelText('Ida'))
     await userEvent.click(screen.getByRole('button', { name: 'Limpar data' }))
     expect(screen.getByText(/^Voos com chegada até 20/)).toBeInTheDocument()
+  })
+
+  it('shows the 3D globe below a route that was found', async () => {
+    mockApi()
+    render(<Home />)
+
+    await search()
+
+    const globe = await screen.findByTestId('route-globe')
+    expect(globe).toHaveAttribute('data-legs', '2')
+  })
+
+  it('shows no globe when no route fits', async () => {
+    mockApi({ body: { route: null } })
+    render(<Home />)
+
+    await search()
+
+    await screen.findByText(/Nenhuma rota disponível/)
+    expect(screen.queryByTestId('route-globe')).not.toBeInTheDocument()
   })
 })
