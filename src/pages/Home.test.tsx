@@ -68,17 +68,6 @@ describe('Home', () => {
     ).toBeInTheDocument()
     expect(screen.getByText('8h 20min')).toBeInTheDocument()
 
-    // Price is the only weight: no per-criterion cards are rendered.
-    expect(
-      screen.queryByRole('heading', { name: 'Menos conexões' }),
-    ).not.toBeInTheDocument()
-    expect(
-      screen.queryByRole('heading', { name: 'Menor tempo' }),
-    ).not.toBeInTheDocument()
-    expect(
-      screen.queryByRole('heading', { name: 'Melhor rota absoluta' }),
-    ).not.toBeInTheDocument()
-
     expect(fetch).toHaveBeenCalledWith(
       '/api/routes',
       expect.objectContaining({

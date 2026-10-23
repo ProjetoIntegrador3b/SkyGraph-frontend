@@ -1,6 +1,6 @@
 # SkyGraph — Frontend
 
-React single-page application for **SkyGraph**, a system that finds the optimal
+React single-page application for **SkyGraph**, a system that finds the cheapest
 flight route between two airports.
 
 Part of the SkyGraph system:
