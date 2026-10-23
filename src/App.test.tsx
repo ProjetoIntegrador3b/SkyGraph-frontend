@@ -6,7 +6,11 @@ describe('App routing', () => {
     window.history.pushState({}, '', '/home')
     render(<App />)
 
-    expect(screen.getByText('Hello SkyGraphers')).toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', {
+        name: 'Encontre a melhor rota para sua viagem',
+      }),
+    ).toBeInTheDocument()
   })
 
   it('redirects / to /home', () => {
@@ -14,6 +18,10 @@ describe('App routing', () => {
     render(<App />)
 
     expect(window.location.pathname).toBe('/home')
-    expect(screen.getByText('Hello SkyGraphers')).toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', {
+        name: 'Encontre a melhor rota para sua viagem',
+      }),
+    ).toBeInTheDocument()
   })
 })
