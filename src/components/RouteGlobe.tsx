@@ -31,7 +31,9 @@ const stopColours: Record<GlobeStop['role'], string> = {
   destination: '#ff7a8a',
 }
 
-const HEIGHT = 420
+// Height follows the width on narrow screens, so on a phone the globe leaves
+// room to scroll past it: dragging on the globe rotates it instead.
+const MAX_HEIGHT = 420
 
 // A 3D globe with the route's airports and one animated arc per leg. Drag to
 // rotate, scroll or pinch to zoom. Loaded on demand: three.js is large.
@@ -75,7 +77,7 @@ export default function RouteGlobe({ route, airports }: RouteGlobeProps) {
           <Globe
             ref={globeRef}
             width={width}
-            height={HEIGHT}
+            height={Math.min(MAX_HEIGHT, Math.round(width * 0.85))}
             backgroundColor="rgba(0,0,0,0)"
             globeMaterial={oceanMaterial}
             showAtmosphere
