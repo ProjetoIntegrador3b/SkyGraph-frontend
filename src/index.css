@@ -478,6 +478,32 @@ input {
   }
 }
 
+.calendar-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
+.calendar-clear {
+  padding: 0.45rem 0.9rem;
+  border: 1px solid #34516e;
+  border-radius: 999px;
+  color: #c7f4ee;
+  background: transparent;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.calendar-clear:hover:not(:disabled) {
+  border-color: #53c9c0;
+}
+
+.calendar-clear:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .date-range-summary {
   grid-column: 1 / -1;
   margin: -0.25rem 0 0;

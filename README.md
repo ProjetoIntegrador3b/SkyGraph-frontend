@@ -141,7 +141,10 @@ The route search screen at `/home` uses two endpoints of the
 | `GET /api/airports?pageSize=200` | Suggestions in the origin and destination fields, and city names in the result |
 | `POST /api/routes`               | The cheapest route for the search                                              |
 
-The search sends the period chosen in the calendar:
+The search sends the period chosen in the calendar. Both dates are optional: an
+empty **Ida** means no earliest departure, an empty **Volta** means no latest
+arrival, and the request leaves that field out. **Limpar data** in the calendar
+empties a date again.
 
 ```json
 {
@@ -153,7 +156,7 @@ The search sends the period chosen in the calendar:
 ```
 
 The backend answers with the cheapest route that departs and arrives within the
-period, or `{"route": null}` when none fits:
+period (or within its open ends), or `{"route": null}` when none fits:
 
 ```json
 {

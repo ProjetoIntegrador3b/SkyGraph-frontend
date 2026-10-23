@@ -4,20 +4,42 @@ import { afterEach, beforeEach, vi } from 'vitest'
 import { mockApi } from '../test/api'
 import Home from './Home'
 
-async function search(origin = 'GRU', destination = 'JFK') {
+type Dates = { departure?: number; return?: number }
+
+// Fills the airports, picks the given days of next month (always in the
+// future; past days are disabled), and submits.
+async function search(
+  origin = 'GRU',
+  destination = 'JFK',
+  dates: Dates = { departure: 15, return: 20 },
+) {
   await userEvent.type(screen.getByLabelText('Origem'), origin)
   await userEvent.type(screen.getByLabelText('Destino'), destination)
-  await userEvent.click(screen.getByLabelText('Ida'))
-  // Page forward one month so the days picked below are always in the
-  // future -- days before today are disabled and would not register.
-  await userEvent.click(screen.getByRole('button', { name: 'Próximo mês' }))
-  await userEvent.click(screen.getAllByRole('button', { name: /15 de/ })[0])
-  // Each pick closes the calendar; it reopens on the same month.
-  await userEvent.click(screen.getByLabelText('Volta'))
-  await userEvent.click(screen.getAllByRole('button', { name: /20 de/ })[0])
+  let paged = false
+  for (const [label, day] of [
+    ['Ida', dates.departure],
+    ['Volta', dates.return],
+  ] as const) {
+    if (day === undefined) continue
+    await userEvent.click(screen.getByLabelText(label))
+    // Each pick closes the calendar; it reopens on the same month.
+    if (!paged) {
+      await userEvent.click(screen.getByRole('button', { name: 'Próximo mês' }))
+      paged = true
+    }
+    await userEvent.click(
+      screen.getAllByRole('button', { name: new RegExp(`\\b${day} de`) })[0],
+    )
+  }
   await userEvent.click(
     screen.getByRole('button', { name: 'Buscar melhor rota' }),
   )
+}
+
+// The JSON body of the route search request.
+function sentSearch(fetch: ReturnType<typeof mockApi>) {
+  const call = fetch.mock.calls.find(([url]) => url === '/api/routes')
+  return JSON.parse(String(call?.[1]?.body))
 }
 
 describe('Home', () => {
@@ -135,5 +157,60 @@ describe('Home', () => {
       'Origem e destino devem ser aeroportos diferentes.',
     )
     expect(fetch).not.toHaveBeenCalledWith('/api/routes', expect.anything())
+  })
+
+  it('searches without dates, sending only the airports', async () => {
+    const fetch = mockApi()
+    render(<Home />)
+
+    await search('GRU', 'JFK', {})
+
+    await screen.findByRole('list', { name: 'Trechos da rota' })
+    expect(sentSearch(fetch)).toEqual({ origin: 'GRU', destination: 'JFK' })
+  })
+
+  it('searches from a departure date with no arrival limit', async () => {
+    const fetch = mockApi()
+    render(<Home />)
+
+    await search('GRU', 'JFK', { departure: 15 })
+
+    await screen.findByRole('list', { name: 'Trechos da rota' })
+    const body = sentSearch(fetch)
+    expect(body.departureDate).toMatch(/^\d{4}-\d{2}-15$/)
+    expect(body).not.toHaveProperty('returnDate')
+  })
+
+  it('searches up to an arrival date with no departure limit', async () => {
+    const fetch = mockApi()
+    render(<Home />)
+
+    await search('GRU', 'JFK', { return: 20 })
+
+    await screen.findByRole('list', { name: 'Trechos da rota' })
+    const body = sentSearch(fetch)
+    expect(body.returnDate).toMatch(/^\d{4}-\d{2}-20$/)
+    expect(body).not.toHaveProperty('departureDate')
+  })
+
+  it('describes the period for any combination of dates', async () => {
+    mockApi()
+    render(<Home />)
+
+    expect(screen.getByText(/Sem datas/)).toBeInTheDocument()
+    expect(screen.getByLabelText('Ida')).toHaveTextContent('Qualquer data')
+
+    await userEvent.click(screen.getByLabelText('Ida'))
+    await userEvent.click(screen.getByRole('button', { name: 'Próximo mês' }))
+    await userEvent.click(screen.getAllByRole('button', { name: /\b15 de/ })[0])
+    expect(screen.getByText(/^Voos a partir de 15/)).toBeInTheDocument()
+
+    await userEvent.click(screen.getByLabelText('Volta'))
+    await userEvent.click(screen.getAllByRole('button', { name: /\b20 de/ })[0])
+    expect(screen.getByText(/^Voos entre 15 .* e 20 /)).toBeInTheDocument()
+
+    await userEvent.click(screen.getByLabelText('Ida'))
+    await userEvent.click(screen.getByRole('button', { name: 'Limpar data' }))
+    expect(screen.getByText(/^Voos com chegada até 20/)).toBeInTheDocument()
   })
 })

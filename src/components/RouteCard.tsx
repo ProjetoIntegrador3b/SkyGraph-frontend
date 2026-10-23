@@ -1,5 +1,6 @@
 import type { Airport } from '../types/airport'
 import type { RouteResult } from '../types/route'
+import { formatDay } from '../utils/dates'
 
 interface RouteCardProps {
   route: RouteResult | null
@@ -11,22 +12,10 @@ const priceFormatter = new Intl.NumberFormat('pt-BR', {
   currency: 'BRL',
 })
 
-const dateFormatter = new Intl.DateTimeFormat('pt-BR', {
-  day: '2-digit',
-  month: 'short',
-  year: 'numeric',
-})
-
-// Parse the API's YYYY-MM-DD as a local day, so the time zone never shifts it.
-function formatDate(value: string) {
-  const [year, month, day] = value.split('-').map(Number)
-  return dateFormatter.format(new Date(year, month - 1, day))
-}
-
 function formatPeriod(departure: string, arrival: string) {
   return departure === arrival
-    ? formatDate(departure)
-    : `${formatDate(departure)} → ${formatDate(arrival)}`
+    ? formatDay(departure)
+    : `${formatDay(departure)} → ${formatDay(arrival)}`
 }
 
 function connectionsLabel(connections: number) {

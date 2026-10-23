@@ -28,9 +28,13 @@ export const mockAirports: Airport[] = [
   },
 ]
 
-// A one-connection route that starts on the first day of the search.
+// A one-connection route on the first day of the search, or on its last day
+// (or today) when the search has no start.
 export function getMockRoutes(search: RouteSearchRequest): RouteSearchResponse {
-  const day = search.departureDate
+  const day =
+    search.departureDate ??
+    search.returnDate ??
+    new Date().toISOString().slice(0, 10)
 
   return {
     route: {

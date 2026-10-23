@@ -1,5 +1,6 @@
 import type { FormEvent } from 'react'
 import type { Airport } from '../types/airport'
+import { formatDay } from '../utils/dates'
 import AirportSelect from './AirportSelect'
 import DateRangePicker from './DateRangePicker'
 
@@ -15,6 +16,15 @@ interface RouteSearchFormProps {
   onDepartureDateChange: (value: string) => void
   onReturnDateChange: (value: string) => void
   onSubmit: (event: FormEvent<HTMLFormElement>) => void
+}
+
+function describePeriod(departureDate: string, returnDate: string) {
+  if (departureDate && returnDate) {
+    return `Voos entre ${formatDay(departureDate)} e ${formatDay(returnDate)}`
+  }
+  if (departureDate) return `Voos a partir de ${formatDay(departureDate)}`
+  if (returnDate) return `Voos com chegada até ${formatDay(returnDate)}`
+  return 'Sem datas: a busca considera todos os voos'
 }
 
 export default function RouteSearchForm({
@@ -57,11 +67,9 @@ export default function RouteSearchForm({
         onReturnDateChange={onReturnDateChange}
       />
 
-      {departureDate && returnDate && (
-        <p className="date-range-summary" role="status">
-          Período selecionado: {departureDate} → {returnDate}
-        </p>
-      )}
+      <p className="date-range-summary" role="status">
+        {describePeriod(departureDate, returnDate)}
+      </p>
 
       <button type="submit" disabled={loading}>
         {loading ? (
