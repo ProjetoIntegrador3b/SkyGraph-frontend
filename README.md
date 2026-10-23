@@ -41,8 +41,7 @@ This repository owns the user interface only: route search input, results
 presentation, and client-side navigation. All routing logic and data live behind
 the API.
 
-> **Current state:** the app is an intentionally minimal base. It renders a single
-> `/home` page while the route-search UI is designed.
+> **Current state:** the app has a single page, `/home`, with the route search.
 
 ---
 
@@ -112,60 +111,112 @@ same `skygraph-network`.
 
 ```
 src/
-├── App.tsx           # Router and route definitions
-├── main.tsx          # React root
-├── index.css         # Global styles
-├── pages/            # One component per route
-│   └── Home.tsx
+├── App.tsx              # Router and route definitions
+├── main.tsx             # React root
+├── index.css            # Global styles
+├── pages/               # One component per route
+│   └── Home.tsx         # Route search screen
+├── components/          # RouteSearchForm, DateRangePicker, RouteCard
+├── services/
+│   ├── api.ts           # API address, fetch wrapper, readable error messages
+│   ├── airports.ts      # GET /api/airports — airport suggestions
+│   ├── routes.ts        # POST /api/routes — cheapest route search
+│   └── mockRoutes.ts    # Sample data for mock mode
+├── types/               # Airport, Flight and route types, as the API sends them
 └── test/
-    └── setup.ts      # Testing Library setup, runs before each suite
+    ├── api.ts           # Fake API responses shared by the tests
+    └── setup.ts         # Testing Library setup, runs before each suite
 ```
 
 Adding a page means creating a component in `src/pages/` and registering a
 `<Route>` in `src/App.tsx`.
 
-The route search screen is available at `/home`. It sends a `POST` request to
-`/api/routes` with the following payload:
+## Talking to the backend
+
+The route search screen at `/home` uses two endpoints of the
+[backend](https://github.com/ProjetoIntegrador3b/SkyGraph-backend#endpoints):
+
+| Request                          | Used for                                                                       |
+| -------------------------------- | ------------------------------------------------------------------------------ |
+| `GET /api/airports?pageSize=200` | Suggestions in the origin and destination fields, and city names in the result |
+| `POST /api/routes`               | The cheapest route for the search                                              |
+
+The search sends the period chosen in the calendar:
 
 ```json
 {
   "origin": "GRU",
-  "destination": "JFK",
-  "departureDate": "2030-06-10",
-  "returnDate": "2030-06-20"
+  "destination": "GIG",
+  "departureDate": "2027-01-10",
+  "returnDate": "2027-01-20"
 }
 ```
 
-The endpoint can be changed without modifying the UI by defining
-`VITE_API_ROUTES_URL`, for example in a local `.env` file:
+The backend answers with the cheapest route that departs and arrives within the
+period, or `{"route": null}` when none fits:
+
+```json
+{
+  "route": {
+    "price": 984.95,
+    "connections": 1,
+    "departureDate": "2027-01-11",
+    "arrivalDate": "2027-01-13",
+    "legs": [
+      {
+        "uuid": "…",
+        "price": 682.94,
+        "origin": "GRU",
+        "destination": "FOR",
+        "departureDate": "2027-01-11",
+        "arrivalDate": "2027-01-11"
+      },
+      {
+        "uuid": "…",
+        "price": 302.01,
+        "origin": "FOR",
+        "destination": "GIG",
+        "departureDate": "2027-01-12",
+        "arrivalDate": "2027-01-13"
+      }
+    ]
+  }
+}
+```
+
+If the airport list fails to load, the fields still accept typed codes. API
+errors are shown as messages in Portuguese (unknown airport, invalid search, or
+server unreachable).
+
+### Which backend the app calls
+
+| How the app runs                  | API address                                                         |
+| --------------------------------- | ------------------------------------------------------------------- |
+| `npm run dev`                     | `/api`, forwarded by the Vite dev server to `http://localhost:8000` |
+| Production build (Vercel, Docker) | `https://skygraph-backend.onrender.com`                             |
+
+Set `VITE_API_URL` to override either, for example in `.env.local`:
 
 ```bash
-VITE_API_ROUTES_URL=http://localhost:8000/api/routes
+VITE_API_URL=https://skygraph-backend.onrender.com
 ```
+
+The value is fixed when the app is built, so restart `npm run dev` or rebuild
+after changing it. The backend must allow the app's address in its CORS
+settings; `localhost:5173`, `localhost:3000` and the Vercel domains already are.
 
 ### Local mock data
 
-For visual and operational testing before the backend is available, create a
-`.env.local` file in the project root. This file is ignored by Git and will not
-be included in commits:
+To work on the UI without any backend, add this to `.env.local`, which Git
+ignores:
 
 ```bash
 VITE_USE_MOCK_API=true
 ```
 
-When this variable is enabled, the frontend returns local sample data after a
-short delay and does not make a network request. Restart `npm run dev` after
-changing environment variables. To connect to the backend again, remove the
-variable or set it to `false`.
-
-The response contains the one cheapest route. It has `price`, `connections` and
-`duration`; `route` is `null` when no route is available for the search:
-
-```json
-{
-  "route": { "price": 450, "connections": 2, "duration": "8h 20min" }
-}
-```
+The app then returns sample airports and a sample route after a short delay,
+without any network request. Restart `npm run dev` after changing it. To use
+the backend again, remove the variable or set it to `false`.
 
 ---
 

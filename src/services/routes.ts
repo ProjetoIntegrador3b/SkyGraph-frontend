@@ -1,26 +1,19 @@
 import type { RouteSearchRequest, RouteSearchResponse } from '../types/route'
+import { request, isMockApi } from './api'
 import { searchMockRoutes } from './mockRoutes'
 
-const routesEndpoint = import.meta.env.VITE_API_ROUTES_URL ?? '/api/routes'
-
 export async function searchRoutes(
-  request: RouteSearchRequest,
+  search: RouteSearchRequest,
 ): Promise<RouteSearchResponse> {
-  if (import.meta.env.VITE_USE_MOCK_API === 'true') {
-    return searchMockRoutes(request)
+  if (isMockApi()) {
+    return searchMockRoutes(search)
   }
 
-  const response = await fetch(routesEndpoint, {
+  return request<RouteSearchResponse>('/api/routes', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify(request),
+    body: JSON.stringify(search),
   })
-
-  if (!response.ok) {
-    throw new Error('Não foi possível buscar as rotas.')
-  }
-
-  return (await response.json()) as RouteSearchResponse
 }
