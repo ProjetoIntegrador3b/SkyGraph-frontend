@@ -1,10 +1,21 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react'
+import {
+  lazy,
+  Suspense,
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+} from 'react'
+import GlobeBoundary from '../components/GlobeBoundary'
 import RouteCard from '../components/RouteCard'
 import RouteSearchForm from '../components/RouteSearchForm'
 import { fetchAirports } from '../services/airports'
 import { searchRoutes } from '../services/routes'
 import type { Airport } from '../types/airport'
 import type { RouteSearchResponse } from '../types/route'
+
+// three.js is large, so the globe downloads only once a route is found.
+const RouteGlobe = lazy(() => import('../components/RouteGlobe'))
 
 export default function Home() {
   const [darkMode, setDarkMode] = useState(
@@ -170,6 +181,18 @@ export default function Home() {
           <div className="route-grid">
             <RouteCard route={results.route} airports={airports} />
           </div>
+
+          {results.route && (
+            <GlobeBoundary>
+              <Suspense
+                fallback={
+                  <p className="route-globe__loading">Carregando mapa 3D…</p>
+                }
+              >
+                <RouteGlobe route={results.route} airports={airports} />
+              </Suspense>
+            </GlobeBoundary>
+          )}
         </section>
       )}
     </main>

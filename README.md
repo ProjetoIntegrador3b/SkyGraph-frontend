@@ -116,13 +116,17 @@ src/
 ├── index.css            # Global styles
 ├── pages/               # One component per route
 │   └── Home.tsx         # Route search screen
-├── components/          # RouteSearchForm, DateRangePicker, RouteCard
+├── components/          # RouteSearchForm, DateRangePicker, RouteCard,
+│                        # RouteGlobe (3D map) and GlobeBoundary
 ├── services/
 │   ├── api.ts           # API address, fetch wrapper, readable error messages
 │   ├── airports.ts      # GET /api/airports — airport suggestions
 │   ├── routes.ts        # POST /api/routes — cheapest route search
 │   └── mockRoutes.ts    # Sample data for mock mode
 ├── types/               # Airport, Flight and route types, as the API sends them
+├── utils/
+│   ├── dates.ts         # Parsing and formatting of YYYY-MM-DD days
+│   └── routeGeometry.ts # Airports, arcs and camera position for the globe
 └── test/
     ├── api.ts           # Fake API responses shared by the tests
     └── setup.ts         # Testing Library setup, runs before each suite
@@ -190,6 +194,25 @@ period (or within its open ends), or `{"route": null}` when none fits:
 If the airport list fails to load, the fields still accept typed codes. API
 errors are shown as messages in Portuguese (unknown airport, invalid search, or
 server unreachable).
+
+### 3D route globe
+
+When a route is found, a globe under the result shows it: the airports are
+marked (origin, connections, destination) and each leg is an animated arc
+between them. Drag to rotate; scroll or pinch to zoom.
+
+- Built with [react-globe.gl](https://github.com/vasturiano/react-globe.gl)
+  (three.js). Country outlines come from the bundled `world-atlas` data, so no
+  remote images are loaded.
+- `src/utils/routeGeometry.ts` turns the route and the airport list into what
+  the globe draws, and centres the camera on the route, backing off for longer
+  routes. It works out the centre on the sphere, so routes across the 180°
+  meridian stay centred.
+- The globe is a separate chunk (about 600 KB gzipped) that downloads only when
+  the first route is shown, so the initial page load does not grow.
+- Browsers without WebGL show a short note instead; the rest of the result is
+  unaffected.
+- Tests stand in for the globe, since jsdom has no WebGL.
 
 ### Which backend the app calls
 
