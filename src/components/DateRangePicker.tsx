@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 
 interface DateRangePickerProps {
   departureDate: string
@@ -72,30 +72,41 @@ export default function DateRangePicker({
   const initialMonth = departureDate ? keyToDate(departureDate) : new Date()
   const [visibleMonth, setVisibleMonth] = useState(startOfMonth(initialMonth))
   const [open, setOpen] = useState(false)
+  // Which date the open calendar sets: each button picks its own date.
   const [selectingReturn, setSelectingReturn] = useState(false)
   const today = getToday()
-  const months = useMemo(
-    () => [visibleMonth, addMonths(visibleMonth, 1)],
-    [visibleMonth],
-  )
 
+  // Picking a day sets the date being chosen and closes the calendar. Days
+  // that would make an invalid period are disabled, so no check is needed.
   function chooseDate(date: Date) {
     const value = dateToKey(date)
 
-    if (!selectingReturn || !departureDate || value < departureDate) {
+    if (selectingReturn) {
+      onReturnDateChange(value)
+    } else {
       onDepartureDateChange(value)
-      onReturnDateChange('')
-      setSelectingReturn(true)
-      return
     }
-
-    onReturnDateChange(value)
-    setSelectingReturn(false)
     setOpen(false)
   }
 
+  // Past days are never available; the return cannot come before the
+  // departure, and the departure cannot come after the return.
+  function isDisabled(value: string) {
+    if (value < today) return true
+    if (selectingReturn) return Boolean(departureDate) && value < departureDate
+    return Boolean(returnDate) && value > returnDate
+  }
+
+  // Open on the month of the date being changed, or of the other date.
   function openPicker(mode: 'departure' | 'return') {
-    setSelectingReturn(mode === 'return' || Boolean(departureDate))
+    const anchor =
+      mode === 'return'
+        ? returnDate || departureDate
+        : departureDate || returnDate
+    if (anchor) {
+      setVisibleMonth(startOfMonth(keyToDate(anchor)))
+    }
+    setSelectingReturn(mode === 'return')
     setOpen(true)
   }
 
@@ -151,11 +162,15 @@ export default function DateRangePicker({
           >
             <div className="calendar-header">
               <div>
-                <strong>Escolha o período</strong>
+                <strong>
+                  {selectingReturn
+                    ? 'Escolha a data de volta'
+                    : 'Escolha a data de ida'}
+                </strong>
                 <span>
                   {selectingReturn
-                    ? 'Agora selecione a volta'
-                    : 'Agora selecione a ida'}
+                    ? 'Dias antes da ida não podem ser escolhidos'
+                    : 'Dias passados ou depois da volta não podem ser escolhidos'}
                 </span>
               </div>
               <div className="calendar-navigation">
@@ -179,54 +194,50 @@ export default function DateRangePicker({
               </div>
             </div>
 
-            <div className="calendar-months">
-              {months.map((month) => (
-                <div className="calendar-month" key={month.toISOString()}>
-                  <h3>{monthFormatter.format(month)}</h3>
-                  <div className="calendar-weekdays" aria-hidden="true">
-                    {weekdays.map((day, index) => (
-                      <span key={`${day}-${index}`}>{day}</span>
-                    ))}
-                  </div>
-                  <div className="calendar-days">
-                    {getMonthDays(month).map((date, index) => {
-                      if (!date) {
-                        return (
-                          <span
-                            className="calendar-day--empty"
-                            key={`empty-${index}`}
-                          />
-                        )
-                      }
+            <div className="calendar-month">
+              <h3>{monthFormatter.format(visibleMonth)}</h3>
+              <div className="calendar-weekdays" aria-hidden="true">
+                {weekdays.map((day, index) => (
+                  <span key={`${day}-${index}`}>{day}</span>
+                ))}
+              </div>
+              <div className="calendar-days">
+                {getMonthDays(visibleMonth).map((date, index) => {
+                  if (!date) {
+                    return (
+                      <span
+                        className="calendar-day--empty"
+                        key={`empty-${index}`}
+                      />
+                    )
+                  }
 
-                      const value = dateToKey(date)
-                      const disabled = value < today
-                      const selected =
-                        value === departureDate || value === returnDate
-                      const inRange =
-                        Boolean(departureDate && returnDate) &&
-                        value > departureDate &&
-                        value < returnDate
+                  const value = dateToKey(date)
+                  const disabled = isDisabled(value)
+                  const selected =
+                    value === departureDate || value === returnDate
+                  const inRange =
+                    Boolean(departureDate && returnDate) &&
+                    value > departureDate &&
+                    value < returnDate
 
-                      return (
-                        <button
-                          className={`calendar-day ${selected ? 'is-selected' : ''} ${inRange ? 'is-in-range' : ''}`}
-                          type="button"
-                          key={value}
-                          disabled={disabled}
-                          onClick={() => chooseDate(date)}
-                          aria-label={date.toLocaleDateString('pt-BR', {
-                            dateStyle: 'full',
-                          })}
-                          aria-pressed={selected}
-                        >
-                          {date.getDate()}
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
-              ))}
+                  return (
+                    <button
+                      className={`calendar-day ${selected ? 'is-selected' : ''} ${inRange ? 'is-in-range' : ''}`}
+                      type="button"
+                      key={value}
+                      disabled={disabled}
+                      onClick={() => chooseDate(date)}
+                      aria-label={date.toLocaleDateString('pt-BR', {
+                        dateStyle: 'full',
+                      })}
+                      aria-pressed={selected}
+                    >
+                      {date.getDate()}
+                    </button>
+                  )
+                })}
+              </div>
             </div>
           </div>
         </div>

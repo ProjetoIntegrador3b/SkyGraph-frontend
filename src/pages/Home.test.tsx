@@ -1,14 +1,38 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { beforeEach } from 'vitest'
+import { afterEach, beforeEach, vi } from 'vitest'
+import { mockApi } from '../test/api'
 import Home from './Home'
+
+async function search(origin = 'GRU', destination = 'JFK') {
+  await userEvent.type(screen.getByLabelText('Origem'), origin)
+  await userEvent.type(screen.getByLabelText('Destino'), destination)
+  await userEvent.click(screen.getByLabelText('Ida'))
+  // Page forward one month so the days picked below are always in the
+  // future -- days before today are disabled and would not register.
+  await userEvent.click(screen.getByRole('button', { name: 'Próximo mês' }))
+  await userEvent.click(screen.getAllByRole('button', { name: /15 de/ })[0])
+  // Each pick closes the calendar; it reopens on the same month.
+  await userEvent.click(screen.getByLabelText('Volta'))
+  await userEvent.click(screen.getAllByRole('button', { name: /20 de/ })[0])
+  await userEvent.click(
+    screen.getByRole('button', { name: 'Buscar melhor rota' }),
+  )
+}
 
 describe('Home', () => {
   beforeEach(() => {
     localStorage.clear()
+    vi.stubEnv('VITE_USE_MOCK_API', 'false')
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllEnvs()
   })
 
   it('renders the route search form', () => {
+    mockApi()
     render(<Home />)
 
     expect(
@@ -29,6 +53,7 @@ describe('Home', () => {
   })
 
   it('toggles and persists the visual theme', async () => {
+    mockApi()
     const user = userEvent.setup()
     render(<Home />)
 
@@ -40,34 +65,33 @@ describe('Home', () => {
     expect(localStorage.getItem('skygraph-theme')).toBe('light')
   })
 
-  it('displays the cheapest route returned by the API', async () => {
-    vi.stubEnv('VITE_USE_MOCK_API', 'false')
-    const response = {
-      route: { price: 450, connections: 2, duration: '8h 20min' },
-    }
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(JSON.stringify(response), { status: 200 }),
-    )
-
+  it('suggests the airports returned by the API', async () => {
+    const fetch = mockApi()
     render(<Home />)
 
-    await userEvent.type(screen.getByLabelText('Origem'), 'GRU')
-    await userEvent.type(screen.getByLabelText('Destino'), 'JFK')
-    await userEvent.click(screen.getByLabelText('Ida'))
-    // Page forward one month so the days picked below are always in the
-    // future -- days before today are disabled and would not register.
-    await userEvent.click(screen.getByRole('button', { name: 'Próximo mês' }))
-    await userEvent.click(screen.getAllByRole('button', { name: /15 de/ })[0])
-    await userEvent.click(screen.getAllByRole('button', { name: /20 de/ })[0])
-    await userEvent.click(
-      screen.getByRole('button', { name: 'Buscar melhor rota' }),
-    )
+    await userEvent.click(screen.getByLabelText('Origem'))
 
     expect(
-      await screen.findByRole('heading', { name: 'Melhor rota' }),
+      await screen.findByRole('option', {
+        name: 'Brasil - GRU - Aeroporto Internacional de Guarulhos',
+      }),
     ).toBeInTheDocument()
-    expect(screen.getByText('8h 20min')).toBeInTheDocument()
+    expect(screen.getAllByRole('option')).toHaveLength(2)
+    expect(fetch).toHaveBeenCalledWith('/api/airports?pageSize=200', undefined)
+  })
 
+  it('displays the cheapest route returned by the API', async () => {
+    const fetch = mockApi()
+    render(<Home />)
+
+    await search()
+
+    const legs = await screen.findByRole('list', { name: 'Trechos da rota' })
+    expect(within(legs).getAllByRole('listitem')).toHaveLength(2)
+    expect(
+      within(legs).getByText('GRU · São Paulo → FOR · Fortaleza'),
+    ).toBeInTheDocument()
+    expect(screen.getByText('1 conexão')).toBeInTheDocument()
     expect(fetch).toHaveBeenCalledWith(
       '/api/routes',
       expect.objectContaining({
@@ -77,5 +101,39 @@ describe('Home', () => {
         ),
       }),
     )
+  })
+
+  it('says so when no route fits the period', async () => {
+    mockApi({ body: { route: null } })
+    render(<Home />)
+
+    await search()
+
+    expect(
+      await screen.findByText(/Nenhuma rota disponível para este período/),
+    ).toBeInTheDocument()
+  })
+
+  it('explains an unknown airport', async () => {
+    mockApi({ body: { detail: 'Airport XXX not found' }, status: 404 })
+    render(<Home />)
+
+    await search('XXX')
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Aeroporto não encontrado',
+    )
+  })
+
+  it('rejects the same airport twice without calling the API', async () => {
+    const fetch = mockApi()
+    render(<Home />)
+
+    await search('GRU', 'gru')
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Origem e destino devem ser aeroportos diferentes.',
+    )
+    expect(fetch).not.toHaveBeenCalledWith('/api/routes', expect.anything())
   })
 })

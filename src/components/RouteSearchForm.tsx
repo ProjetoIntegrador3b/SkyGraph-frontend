@@ -1,7 +1,10 @@
 import type { FormEvent } from 'react'
+import type { Airport } from '../types/airport'
+import AirportSelect from './AirportSelect'
 import DateRangePicker from './DateRangePicker'
 
 interface RouteSearchFormProps {
+  airports: Airport[]
   origin: string
   destination: string
   departureDate: string
@@ -15,6 +18,7 @@ interface RouteSearchFormProps {
 }
 
 export default function RouteSearchForm({
+  airports,
   origin,
   destination,
   departureDate,
@@ -28,29 +32,23 @@ export default function RouteSearchForm({
 }: RouteSearchFormProps) {
   return (
     <form className="route-search-form" onSubmit={onSubmit}>
-      <div className="field">
-        <label htmlFor="origin">Origem</label>
-        <input
-          id="origin"
-          name="origin"
-          placeholder="Ex.: GRU"
-          value={origin}
-          onChange={(event) => onOriginChange(event.target.value)}
-          required
-        />
-      </div>
+      <AirportSelect
+        id="origin"
+        label="Origem"
+        placeholder="Ex.: GRU ou São Paulo"
+        value={origin}
+        airports={airports}
+        onChange={onOriginChange}
+      />
 
-      <div className="field">
-        <label htmlFor="destination">Destino</label>
-        <input
-          id="destination"
-          name="destination"
-          placeholder="Ex.: JFK"
-          value={destination}
-          onChange={(event) => onDestinationChange(event.target.value)}
-          required
-        />
-      </div>
+      <AirportSelect
+        id="destination"
+        label="Destino"
+        placeholder="Ex.: JFK ou Nova York"
+        value={destination}
+        airports={airports}
+        onChange={onDestinationChange}
+      />
 
       <DateRangePicker
         departureDate={departureDate}

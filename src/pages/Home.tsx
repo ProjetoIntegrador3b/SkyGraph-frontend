@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import RouteCard from '../components/RouteCard'
 import RouteSearchForm from '../components/RouteSearchForm'
+import { fetchAirports } from '../services/airports'
 import { searchRoutes } from '../services/routes'
+import type { Airport } from '../types/airport'
 import type { RouteSearchResponse } from '../types/route'
 
 export default function Home() {
@@ -12,10 +14,25 @@ export default function Home() {
   const [destination, setDestination] = useState('')
   const [departureDate, setDepartureDate] = useState('')
   const [returnDate, setReturnDate] = useState('')
+  const [airports, setAirports] = useState<Airport[]>([])
   const [results, setResults] = useState<RouteSearchResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const resultsRef = useRef<HTMLElement>(null)
+
+  // Airport suggestions are a convenience: if they fail to load, codes can
+  // still be typed, so the error is not shown.
+  useEffect(() => {
+    let active = true
+    fetchAirports()
+      .then((list) => {
+        if (active) setAirports(list)
+      })
+      .catch(() => undefined)
+    return () => {
+      active = false
+    }
+  }, [])
 
   useEffect(() => {
     if (
@@ -43,6 +60,15 @@ export default function Home() {
     setError(null)
     setLoading(true)
 
+    const from = origin.trim().toUpperCase()
+    const to = destination.trim().toUpperCase()
+
+    if (from === to) {
+      setError('Origem e destino devem ser aeroportos diferentes.')
+      setLoading(false)
+      return
+    }
+
     if (!departureDate || !returnDate) {
       setError('Selecione as datas de ida e volta para continuar.')
       setLoading(false)
@@ -57,8 +83,8 @@ export default function Home() {
 
     try {
       const response = await searchRoutes({
-        origin: origin.trim().toUpperCase(),
-        destination: destination.trim().toUpperCase(),
+        origin: from,
+        destination: to,
         departureDate,
         returnDate,
       })
@@ -112,6 +138,7 @@ export default function Home() {
         </p>
 
         <RouteSearchForm
+          airports={airports}
           origin={origin}
           destination={destination}
           departureDate={departureDate}
@@ -146,7 +173,7 @@ export default function Home() {
           </div>
 
           <div className="route-grid">
-            <RouteCard route={results.route} />
+            <RouteCard route={results.route} airports={airports} />
           </div>
         </section>
       )}
