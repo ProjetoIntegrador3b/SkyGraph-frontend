@@ -163,4 +163,34 @@ describe('DateRangePicker', () => {
       departureMonth!,
     )
   })
+
+  it('shows "Qualquer data" for an empty date', () => {
+    renderPicker()
+
+    expect(screen.getByLabelText('Ida')).toHaveTextContent('Qualquer data')
+    expect(screen.getByLabelText('Volta')).toHaveTextContent('Qualquer data')
+  })
+
+  it('clears only the date being chosen and closes', async () => {
+    render(<Harness />)
+    await pickNextMonthDay('Ida', 10)
+    await userEvent.click(screen.getByLabelText('Volta'))
+    await userEvent.click(screen.getAllByRole('button', { name: /\b20 de/ })[0])
+
+    await userEvent.click(screen.getByLabelText('Volta'))
+    await userEvent.click(screen.getByRole('button', { name: 'Limpar data' }))
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(screen.getByTestId('dates').textContent).toMatch(
+      /^\d{4}-\d{2}-10\|$/,
+    )
+  })
+
+  it('disables "Limpar data" when the date is already empty', async () => {
+    renderPicker()
+
+    await userEvent.click(screen.getByLabelText('Ida'))
+
+    expect(screen.getByRole('button', { name: 'Limpar data' })).toBeDisabled()
+  })
 })

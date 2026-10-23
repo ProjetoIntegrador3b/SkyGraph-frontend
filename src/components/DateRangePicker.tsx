@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { formatDay, keyToDate } from '../utils/dates'
 
 interface DateRangePickerProps {
   departureDate: string
@@ -12,22 +13,12 @@ const monthFormatter = new Intl.DateTimeFormat('pt-BR', {
   month: 'long',
   year: 'numeric',
 })
-const displayFormatter = new Intl.DateTimeFormat('pt-BR', {
-  day: '2-digit',
-  month: 'short',
-  year: 'numeric',
-})
 
 function dateToKey(date: Date) {
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')
   const day = String(date.getDate()).padStart(2, '0')
   return `${year}-${month}-${day}`
-}
-
-function keyToDate(value: string) {
-  const [year, month, day] = value.split('-').map(Number)
-  return new Date(year, month - 1, day)
 }
 
 function startOfMonth(date: Date) {
@@ -59,8 +50,9 @@ function getMonthDays(month: Date) {
   return days
 }
 
+// Both dates are optional: an empty one leaves that end of the period open.
 function formatDate(value: string) {
-  return value ? displayFormatter.format(keyToDate(value)) : 'Selecionar data'
+  return value ? formatDay(value) : 'Qualquer data'
 }
 
 export default function DateRangePicker({
@@ -85,6 +77,16 @@ export default function DateRangePicker({
       onReturnDateChange(value)
     } else {
       onDepartureDateChange(value)
+    }
+    setOpen(false)
+  }
+
+  // Empties the date being chosen, reopening that end of the period.
+  function clearDate() {
+    if (selectingReturn) {
+      onReturnDateChange('')
+    } else {
+      onDepartureDateChange('')
     }
     setOpen(false)
   }
@@ -238,6 +240,17 @@ export default function DateRangePicker({
                   )
                 })}
               </div>
+            </div>
+
+            <div className="calendar-footer">
+              <button
+                type="button"
+                className="calendar-clear"
+                onClick={clearDate}
+                disabled={!(selectingReturn ? returnDate : departureDate)}
+              >
+                Limpar data
+              </button>
             </div>
           </div>
         </div>

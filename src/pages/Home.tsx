@@ -69,24 +69,19 @@ export default function Home() {
       return
     }
 
-    if (!departureDate || !returnDate) {
-      setError('Selecione as datas de ida e volta para continuar.')
-      setLoading(false)
-      return
-    }
-
-    if (returnDate < departureDate) {
+    if (departureDate && returnDate && returnDate < departureDate) {
       setError('A data de volta deve ser igual ou posterior à data de ida.')
       setLoading(false)
       return
     }
 
     try {
+      // An empty date is left out, keeping that end of the period open.
       const response = await searchRoutes({
         origin: from,
         destination: to,
-        departureDate,
-        returnDate,
+        ...(departureDate && { departureDate }),
+        ...(returnDate && { returnDate }),
       })
       setResults(response)
     } catch (requestError) {

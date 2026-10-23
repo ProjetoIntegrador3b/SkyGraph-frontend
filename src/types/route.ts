@@ -21,9 +21,10 @@ export interface RouteSearchResponse {
   route: RouteResult | null
 }
 
+// Both dates are optional; a missing one leaves that end of the period open.
 export interface RouteSearchRequest {
   origin: string
   destination: string
-  departureDate: string
-  returnDate: string
+  departureDate?: string
+  returnDate?: string
 }
