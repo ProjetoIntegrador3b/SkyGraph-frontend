@@ -193,4 +193,42 @@ describe('DateRangePicker', () => {
 
     expect(screen.getByRole('button', { name: 'Limpar data' })).toBeDisabled()
   })
+
+  it('shows an × only on dates that are set', async () => {
+    render(<Harness />)
+    expect(screen.queryByRole('button', { name: /Limpar data de/ })).toBeNull()
+
+    await pickNextMonthDay('Ida', 10)
+
+    expect(
+      screen.getByRole('button', { name: 'Limpar data de ida' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Limpar data de volta' }),
+    ).toBeNull()
+  })
+
+  it('clears a date with its × without opening the calendar', async () => {
+    render(<Harness />)
+    await pickNextMonthDay('Ida', 10)
+    await userEvent.click(screen.getByLabelText('Volta'))
+    await userEvent.click(screen.getAllByRole('button', { name: /\b20 de/ })[0])
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Limpar data de ida' }),
+    )
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(screen.getByTestId('dates').textContent).toMatch(
+      /^\|\d{4}-\d{2}-20$/,
+    )
+    expect(screen.getByLabelText('Ida')).toHaveTextContent('Qualquer data')
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Limpar data de volta' }),
+    )
+
+    expect(screen.getByTestId('dates')).toHaveTextContent('|')
+    expect(screen.queryByRole('button', { name: /Limpar data de/ })).toBeNull()
+  })
 })
