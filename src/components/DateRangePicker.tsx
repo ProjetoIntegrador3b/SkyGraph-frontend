@@ -112,37 +112,57 @@ export default function DateRangePicker({
     setOpen(true)
   }
 
+  const fields = [
+    {
+      mode: 'departure',
+      id: 'departure-date-trigger',
+      label: 'Ida',
+      icon: '✈',
+      value: departureDate,
+      clear: () => onDepartureDateChange(''),
+    },
+    {
+      mode: 'return',
+      id: 'return-date-trigger',
+      label: 'Volta',
+      icon: '↩',
+      value: returnDate,
+      clear: () => onReturnDateChange(''),
+    },
+  ] as const
+
   return (
     <div className="date-picker">
       <div className="date-picker__fields">
-        <div className="field">
-          <label htmlFor="departure-date-trigger">Ida</label>
-          <button
-            id="departure-date-trigger"
-            className="date-trigger"
-            type="button"
-            onClick={() => openPicker('departure')}
-            aria-expanded={open}
-            aria-haspopup="dialog"
-          >
-            <span aria-hidden="true">✈</span>
-            {formatDate(departureDate)}
-          </button>
-        </div>
-        <div className="field">
-          <label htmlFor="return-date-trigger">Volta</label>
-          <button
-            id="return-date-trigger"
-            className="date-trigger"
-            type="button"
-            onClick={() => openPicker('return')}
-            aria-expanded={open}
-            aria-haspopup="dialog"
-          >
-            <span aria-hidden="true">↩</span>
-            {formatDate(returnDate)}
-          </button>
-        </div>
+        {fields.map((field) => (
+          <div className="field" key={field.mode}>
+            <label htmlFor={field.id}>{field.label}</label>
+            <div className="date-trigger-wrap">
+              <button
+                id={field.id}
+                className={`date-trigger ${field.value ? 'has-value' : ''}`}
+                type="button"
+                onClick={() => openPicker(field.mode)}
+                aria-expanded={open}
+                aria-haspopup="dialog"
+              >
+                <span aria-hidden="true">{field.icon}</span>
+                {formatDate(field.value)}
+              </button>
+              {/* A sibling, not a child: a button cannot contain a button. */}
+              {field.value && (
+                <button
+                  className="date-clear"
+                  type="button"
+                  onClick={field.clear}
+                  aria-label={`Limpar data de ${field.label.toLowerCase()}`}
+                >
+                  ×
+                </button>
+              )}
+            </div>
+          </div>
+        ))}
       </div>
 
       {open && (

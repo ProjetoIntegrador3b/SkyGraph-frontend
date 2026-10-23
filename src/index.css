@@ -323,6 +323,44 @@ input {
     box-shadow 200ms ease;
 }
 
+.date-trigger-wrap {
+  position: relative;
+}
+
+/* Room for the clear button, so the date never runs under it. */
+.date-trigger.has-value {
+  padding-right: 2.4rem;
+}
+
+.date-clear {
+  position: absolute;
+  top: 50%;
+  right: 0.45rem;
+  display: grid;
+  width: 1.6rem;
+  height: 1.6rem;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  color: #607086;
+  background: transparent;
+  font-size: 1.15rem;
+  line-height: 1;
+  cursor: pointer;
+  transform: translateY(-50%);
+}
+
+.date-clear:hover,
+.date-clear:focus-visible {
+  color: #172033;
+  background: rgb(23 32 51 / 10%);
+}
+
+.date-clear:focus-visible {
+  outline: 3px solid rgb(83 201 192 / 45%);
+}
+
 .date-trigger span {
   color: #198f91;
 }
