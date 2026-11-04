@@ -1,9 +1,10 @@
-import { useMemo, useState, type KeyboardEvent } from 'react'
+import { useMemo, useState, type KeyboardEvent, type ReactNode } from 'react'
 import type { Airport } from '../types/airport'
 
 interface AirportSelectProps {
   id: string
   label: string
+  icon?: ReactNode
   placeholder: string
   value: string
   airports: Airport[]
@@ -47,6 +48,7 @@ function matching(airports: Airport[], query: string) {
 export default function AirportSelect({
   id,
   label,
+  icon,
   placeholder,
   value,
   airports,
@@ -57,6 +59,11 @@ export default function AirportSelect({
   const options = useMemo(() => matching(airports, value), [airports, value])
   const listId = `${id}-options`
   const showList = open && options.length > 0
+  // The airport the typed code names, shown under the field.
+  const known = airports.find(
+    (airport) => airport.code === value.trim().toUpperCase(),
+  )
+  const hintId = `${id}-hint`
 
   function choose(airport: Airport) {
     onChange(airport.code)
@@ -83,8 +90,11 @@ export default function AirportSelect({
   }
 
   return (
-    <div className="field airport-select">
-      <label htmlFor={id}>{label}</label>
+    <div className={`field airport-select ${showList ? 'is-open' : ''}`}>
+      <label htmlFor={id}>
+        {icon && <span className="field__icon">{icon}</span>}
+        {label}
+      </label>
       <input
         id={id}
         name={id}
@@ -92,6 +102,7 @@ export default function AirportSelect({
         aria-autocomplete="list"
         aria-expanded={showList}
         aria-controls={listId}
+        aria-describedby={known ? hintId : undefined}
         aria-activedescendant={
           showList ? `${listId}-${options[active]?.code}` : undefined
         }
@@ -108,6 +119,9 @@ export default function AirportSelect({
         onKeyDown={handleKeyDown}
         required
       />
+      <span className="field__hint" id={hintId}>
+        {known ? `${known.city} · ${known.country}` : ' '}
+      </span>
       {showList && (
         <ul
           id={listId}
@@ -121,6 +135,7 @@ export default function AirportSelect({
               id={`${listId}-${airport.code}`}
               role="option"
               aria-selected={index === active}
+              aria-label={airportLabel(airport)}
               className="airport-option"
               // mousedown, not click: it fires before the input's blur closes
               // the list, and preventDefault keeps the focus in the field.
@@ -130,7 +145,13 @@ export default function AirportSelect({
               }}
               onMouseEnter={() => setActive(index)}
             >
-              {airportLabel(airport)}
+              {/* Reads as "country - code - name"; laid out as a code badge
+                  beside the name, with the separators hidden. */}
+              <span className="airport-option__country">{airport.country}</span>
+              <span className="airport-option__sep"> - </span>
+              <span className="airport-option__code">{airport.code}</span>
+              <span className="airport-option__sep"> - </span>
+              <span className="airport-option__name">{airport.name}</span>
             </li>
           ))}
         </ul>

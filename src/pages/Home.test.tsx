@@ -106,7 +106,10 @@ describe('Home', () => {
       }),
     ).toBeInTheDocument()
     expect(screen.getAllByRole('option')).toHaveLength(2)
-    expect(fetch).toHaveBeenCalledWith('/api/airports?pageSize=200', undefined)
+    expect(fetch).toHaveBeenCalledWith(
+      '/api/airports?pageSize=200',
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    )
   })
 
   it('displays the cheapest route returned by the API', async () => {
@@ -229,6 +232,20 @@ describe('Home', () => {
 
     const globe = await screen.findByTestId('route-globe')
     expect(globe).toHaveAttribute('data-legs', '2')
+  })
+
+  it('answers from the sample data when the server is down', async () => {
+    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('offline'))
+    render(<Home />)
+
+    expect(await screen.findByText(/Servidor indisponível/)).toBeInTheDocument()
+
+    await search('POA', 'LHR', {})
+
+    const legs = await screen.findByRole('list', { name: 'Trechos da rota' })
+    expect(within(legs).getAllByRole('listitem')).toHaveLength(3)
+    expect(screen.getByText('2 conexões')).toBeInTheDocument()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 
   it('shows no globe when no route fits', async () => {

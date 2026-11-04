@@ -3,6 +3,13 @@ import type { Airport } from '../types/airport'
 import { formatDay } from '../utils/dates'
 import AirportSelect from './AirportSelect'
 import DateRangePicker from './DateRangePicker'
+import {
+  ArrowRightIcon,
+  CalendarIcon,
+  LandingIcon,
+  SwapIcon,
+  TakeoffIcon,
+} from './icons'
 
 interface RouteSearchFormProps {
   airports: Airport[]
@@ -13,6 +20,7 @@ interface RouteSearchFormProps {
   loading: boolean
   onOriginChange: (value: string) => void
   onDestinationChange: (value: string) => void
+  onSwap: () => void
   onDepartureDateChange: (value: string) => void
   onReturnDateChange: (value: string) => void
   onSubmit: (event: FormEvent<HTMLFormElement>) => void
@@ -36,69 +44,89 @@ export default function RouteSearchForm({
   loading,
   onOriginChange,
   onDestinationChange,
+  onSwap,
   onDepartureDateChange,
   onReturnDateChange,
   onSubmit,
 }: RouteSearchFormProps) {
   return (
     <form className="route-search-form" onSubmit={onSubmit}>
-      <AirportSelect
-        id="origin"
-        label="Origem"
-        placeholder="Ex.: GRU ou São Paulo"
-        value={origin}
-        airports={airports}
-        onChange={onOriginChange}
-      />
+      <div className="search-bar">
+        <div className="search-bar__airports">
+          <AirportSelect
+            id="origin"
+            label="Origem"
+            icon={<TakeoffIcon />}
+            placeholder="GRU ou São Paulo"
+            value={origin}
+            airports={airports}
+            onChange={onOriginChange}
+          />
 
-      <AirportSelect
-        id="destination"
-        label="Destino"
-        placeholder="Ex.: JFK ou Nova York"
-        value={destination}
-        airports={airports}
-        onChange={onDestinationChange}
-      />
+          <button
+            className="swap-button"
+            type="button"
+            onClick={onSwap}
+            disabled={!origin && !destination}
+            aria-label="Inverter origem e destino"
+            title="Inverter origem e destino"
+          >
+            <SwapIcon />
+          </button>
 
-      <DateRangePicker
-        departureDate={departureDate}
-        returnDate={returnDate}
-        onDepartureDateChange={onDepartureDateChange}
-        onReturnDateChange={onReturnDateChange}
-      />
-
-      <p className="date-range-summary" role="status">
-        {describePeriod(departureDate, returnDate)}
-      </p>
-
-      <button type="submit" disabled={loading}>
-        {loading ? (
-          <>
-            <span className="button-flight-loader" aria-hidden="true">
-              <span className="button-flight-loader__plane">✈</span>
-            </span>
-            Buscando voos...
-          </>
-        ) : (
-          'Buscar melhor rota'
-        )}
-      </button>
-      {loading && (
-        <div className="flight-loading" role="status" aria-live="polite">
-          <div className="flight-loading__sky" aria-hidden="true">
-            <span className="flight-loading__cloud flight-loading__cloud--one" />
-            <span className="flight-loading__cloud flight-loading__cloud--two" />
-            <span className="flight-loading__trail" />
-            <span className="flight-loading__plane">✈</span>
-          </div>
-          <span>
-            Procurando a melhor rota
-            <span className="loading-dots" aria-hidden="true">
-              ...
-            </span>
-          </span>
+          <AirportSelect
+            id="destination"
+            label="Destino"
+            icon={<LandingIcon />}
+            placeholder="JFK ou Nova York"
+            value={destination}
+            airports={airports}
+            onChange={onDestinationChange}
+          />
         </div>
-      )}
+
+        <DateRangePicker
+          departureDate={departureDate}
+          returnDate={returnDate}
+          onDepartureDateChange={onDepartureDateChange}
+          onReturnDateChange={onReturnDateChange}
+        />
+
+        <button className="submit-button" type="submit" disabled={loading}>
+          {loading ? (
+            <>
+              <span className="spinner" aria-hidden="true" />
+              Buscando voos...
+            </>
+          ) : (
+            <>
+              Buscar melhor rota
+              <ArrowRightIcon className="submit-button__arrow" />
+            </>
+          )}
+        </button>
+      </div>
+
+      <div className="search-meta">
+        <p className="date-range-summary" role="status">
+          <CalendarIcon className="date-range-summary__icon" />
+          {describePeriod(departureDate, returnDate)}
+        </p>
+
+        {loading && (
+          <div className="flight-loading" role="status" aria-live="polite">
+            <span className="flight-loading__track" aria-hidden="true">
+              <span className="flight-loading__dot" />
+            </span>
+            <span>
+              Procurando a melhor rota
+              <span className="loading-dots" aria-hidden="true">
+                ...
+              </span>
+            </span>
+          </div>
+        )}
+      </div>
     </form>
   )
 }

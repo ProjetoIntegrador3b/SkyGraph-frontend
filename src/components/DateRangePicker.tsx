@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { formatDay, keyToDate } from '../utils/dates'
+import { CalendarIcon, ChevronIcon, CloseIcon } from './icons'
 
 interface DateRangePickerProps {
   departureDate: string
@@ -117,7 +118,6 @@ export default function DateRangePicker({
       mode: 'departure',
       id: 'departure-date-trigger',
       label: 'Ida',
-      icon: '✈',
       value: departureDate,
       clear: () => onDepartureDateChange(''),
     },
@@ -125,7 +125,6 @@ export default function DateRangePicker({
       mode: 'return',
       id: 'return-date-trigger',
       label: 'Volta',
-      icon: '↩',
       value: returnDate,
       clear: () => onReturnDateChange(''),
     },
@@ -136,7 +135,12 @@ export default function DateRangePicker({
       <div className="date-picker__fields">
         {fields.map((field) => (
           <div className="field" key={field.mode}>
-            <label htmlFor={field.id}>{field.label}</label>
+            <label htmlFor={field.id}>
+              <span className="field__icon">
+                <CalendarIcon />
+              </span>
+              {field.label}
+            </label>
             <div className="date-trigger-wrap">
               <button
                 id={field.id}
@@ -146,7 +150,6 @@ export default function DateRangePicker({
                 aria-expanded={open}
                 aria-haspopup="dialog"
               >
-                <span aria-hidden="true">{field.icon}</span>
                 {formatDate(field.value)}
               </button>
               {/* A sibling, not a child: a button cannot contain a button. */}
@@ -157,7 +160,7 @@ export default function DateRangePicker({
                   onClick={field.clear}
                   aria-label={`Limpar data de ${field.label.toLowerCase()}`}
                 >
-                  ×
+                  <CloseIcon />
                 </button>
               )}
             </div>
@@ -203,7 +206,7 @@ export default function DateRangePicker({
                   disabled={visibleMonth <= startOfMonth(new Date())}
                   aria-label="Mês anterior"
                 >
-                  ‹
+                  <ChevronIcon direction="left" />
                 </button>
                 <button
                   type="button"
@@ -211,7 +214,7 @@ export default function DateRangePicker({
                   onClick={() => setVisibleMonth(addMonths(visibleMonth, 1))}
                   aria-label="Próximo mês"
                 >
-                  ›
+                  <ChevronIcon direction="right" />
                 </button>
               </div>
             </div>

@@ -20,16 +20,23 @@ const topology = countriesTopology as unknown as Topology<{
 const countries = feature(topology, topology.objects.countries).features
 
 const oceanMaterial = new MeshPhongMaterial({
-  color: '#0b1d33',
-  emissive: '#06101f',
+  color: '#0d1430',
+  emissive: '#060918',
   shininess: 8,
 })
 
+// The same roles, in the same colours, as the logo and the hero art.
 const stopColours: Record<GlobeStop['role'], string> = {
-  origin: '#53c9c0',
-  connection: '#f5c26b',
-  destination: '#ff7a8a',
+  origin: '#7cc4ff',
+  connection: '#ffc857',
+  destination: '#ff6b3d',
 }
+
+const legend: [GlobeStop['role'], string][] = [
+  ['origin', 'Origem'],
+  ['connection', 'Conexão'],
+  ['destination', 'Destino'],
+]
 
 // Height follows the width on narrow screens, so on a phone the globe leaves
 // room to scroll past it: dragging on the globe rotates it instead.
@@ -81,15 +88,15 @@ export default function RouteGlobe({ route, airports }: RouteGlobeProps) {
             backgroundColor="rgba(0,0,0,0)"
             globeMaterial={oceanMaterial}
             showAtmosphere
-            atmosphereColor="#53c9c0"
+            atmosphereColor="#7cc4ff"
             atmosphereAltitude={0.18}
             polygonsData={countries}
-            polygonCapColor={() => '#1d3a55'}
-            polygonSideColor={() => 'rgba(29, 58, 85, 0.6)'}
-            polygonStrokeColor={() => '#2f5677'}
+            polygonCapColor={() => '#1c2547'}
+            polygonSideColor={() => 'rgba(28, 37, 71, 0.6)'}
+            polygonStrokeColor={() => '#34406e'}
             polygonAltitude={0.004}
             arcsData={geometry.arcs}
-            arcColor={() => ['#53c9c0', '#ff7a8a']}
+            arcColor={() => [stopColours.origin, stopColours.destination]}
             arcStroke={1.4}
             arcAltitudeAutoScale={0.5}
             arcDashLength={0.5}
@@ -112,15 +119,28 @@ export default function RouteGlobe({ route, airports }: RouteGlobeProps) {
             labelText="code"
             labelSize={1.4 * scale}
             labelDotRadius={0}
-            labelColor={() => '#edf6ff'}
+            labelColor={() => '#eef0f8'}
             labelAltitude={0.03}
             labelResolution={3}
           />
         )}
       </div>
-      <p className="route-globe__hint">
-        Arraste para girar · role ou use o gesto de pinça para aproximar
-      </p>
+      <div className="route-globe__footer">
+        <ul className="route-globe__legend" aria-label="Legenda do mapa">
+          {legend.map(([role, label]) => (
+            <li key={role}>
+              <span
+                className="route-globe__swatch"
+                style={{ background: stopColours[role] }}
+              />
+              {label}
+            </li>
+          ))}
+        </ul>
+        <p className="route-globe__hint">
+          Arraste para girar · role ou use o gesto de pinça para aproximar
+        </p>
+      </div>
     </section>
   )
 }
