@@ -116,8 +116,9 @@ src/
 ├── index.css            # Global styles
 ├── pages/               # One component per route
 │   └── Home.tsx         # Route search screen
-├── components/          # RouteSearchForm, DateRangePicker, RouteCard,
-│                        # RouteGlobe (3D map) and GlobeBoundary
+├── components/          # RouteSearchForm, AirportSelect, DateRangePicker,
+│                        # RouteCard, RouteGlobe (3D map), GlobeBoundary,
+│                        # Logo, NetworkArt (hero illustration) and icons
 ├── services/
 │   ├── api.ts           # API address, fetch wrapper, readable error messages
 │   ├── airports.ts      # GET /api/airports — airport suggestions
@@ -134,6 +135,28 @@ src/
 
 Adding a page means creating a component in `src/pages/` and registering a
 `<Route>` in `src/App.tsx`.
+
+## Visual identity
+
+- **Logo** (`src/components/Logo.tsx`, `public/logo-mark.svg`): a flight path
+  drawn as an **S** through three graph nodes — origin, connection,
+  destination. The inline version takes its colours from CSS variables, so it
+  follows the theme.
+- **Favicon**: `public/favicon.svg`, with PNG fallbacks `favicon-32.png` and
+  `apple-touch-icon.png` (180 × 180).
+- **Type**, bundled with the app through Fontsource, so no font is loaded
+  from a third party:
+
+  | Role    | Font                                         |
+  | ------- | -------------------------------------------- |
+  | Display | Bricolage Grotesque (variable, opsz/wght)    |
+  | Text    | Instrument Sans (variable)                   |
+  | Codes   | JetBrains Mono (IATA codes, labels, figures) |
+
+- **Colour**: ink night (dark, the default) or warm paper (light), one signal
+  orange for actions. The route roles keep the same colours everywhere — logo,
+  hero art, result card and globe: origin blue, connection amber, destination
+  orange. All tokens live at the top of `src/index.css`.
 
 ## Talking to the backend
 
@@ -231,18 +254,27 @@ The value is fixed when the app is built, so restart `npm run dev` or rebuild
 after changing it. The backend must allow the app's address in its CORS
 settings; `localhost:5173`, `localhost:3000` and the Vercel domains already are.
 
-### Local mock data
+### Sample data and mock mode
 
-To work on the UI without any backend, add this to `.env.local`, which Git
-ignores:
+`src/data/sample-network.json` is a snapshot of the backend's seed data
+(`initial_data_csv/aeroportos.csv` and `voos.csv`: 40 airports, 400 flights).
+`src/utils/cheapestRoute.ts` searches it with the same rules as the backend's
+Cypher query (period, connections on or after the previous landing, at most 4
+flights, ties to fewer flights then earliest arrival); it was checked against a
+live backend on all 1,560 airport pairs in four periods with no difference.
 
-```bash
-VITE_USE_MOCK_API=true
-```
+The app answers from this data in two cases:
 
-The app then returns sample airports and a sample route after a short delay,
-without any network request. Restart `npm run dev` after changing it. To use
-the backend again, remove the variable or set it to `false`.
+- **Mock mode** — add `VITE_USE_MOCK_API=true` to `.env.local` (Git ignores it)
+  to work on the UI with no backend at all.
+- **Automatic fallback** — when the API cannot be reached, does not answer
+  within 12 seconds, or answers with a 5xx, the page switches to the sample
+  data for the rest of the visit and shows a "Demonstração" notice. Search
+  errors (404, 422) are real answers and are shown as usual. Set
+  `VITE_SAMPLE_FALLBACK=false` to turn the fallback off.
+
+The data is loaded as a separate chunk (about 17 KB gzipped) only when one of
+these cases happens. Regenerate the snapshot whenever the backend's CSVs change.
 
 ---
 

@@ -4,18 +4,25 @@ import {
   useEffect,
   useRef,
   useState,
+  useSyncExternalStore,
   type FormEvent,
 } from 'react'
 import GlobeBoundary from '../components/GlobeBoundary'
+import { AlertIcon, MoonIcon, SunIcon } from '../components/icons'
+import Logo from '../components/Logo'
+import NetworkArt from '../components/NetworkArt'
 import RouteCard from '../components/RouteCard'
 import RouteSearchForm from '../components/RouteSearchForm'
 import { fetchAirports } from '../services/airports'
+import { isUsingSampleData, subscribeToSampleData } from '../services/api'
 import { searchRoutes } from '../services/routes'
 import type { Airport } from '../types/airport'
 import type { RouteSearchResponse } from '../types/route'
 
 // three.js is large, so the globe downloads only once a route is found.
 const RouteGlobe = lazy(() => import('../components/RouteGlobe'))
+
+const themeColours = { dark: '#090c18', light: '#f3f0e8' }
 
 export default function Home() {
   const [darkMode, setDarkMode] = useState(
@@ -30,6 +37,10 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const resultsRef = useRef<HTMLElement>(null)
+  const sampleData = useSyncExternalStore(
+    subscribeToSampleData,
+    isUsingSampleData,
+  )
 
   // Airport suggestions are a convenience: if they fail to load, codes can
   // still be typed, so the error is not shown.
@@ -44,6 +55,16 @@ export default function Home() {
       active = false
     }
   }, [])
+
+  // The page background past the app (overscroll, the browser's chrome)
+  // follows the theme too.
+  useEffect(() => {
+    const theme = darkMode ? 'dark' : 'light'
+    document.documentElement.dataset.theme = theme
+    document
+      .querySelector('meta[name="theme-color"]')
+      ?.setAttribute('content', themeColours[theme])
+  }, [darkMode])
 
   useEffect(() => {
     if (
@@ -64,6 +85,11 @@ export default function Home() {
       window.localStorage.setItem('skygraph-theme', next ? 'dark' : 'light')
       return next
     })
+  }
+
+  function swapAirports() {
+    setOrigin(destination)
+    setDestination(origin)
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -108,93 +134,125 @@ export default function Home() {
   }
 
   return (
-    <main className={`page-shell ${darkMode ? 'theme-dark' : 'theme-light'}`}>
-      <div className="ambient-glow ambient-glow--one" />
-      <div className="ambient-glow ambient-glow--two" />
+    <div className={`page-shell ${darkMode ? 'theme-dark' : 'theme-light'}`}>
+      <div className="page-backdrop" aria-hidden="true" />
+
       <header className="topbar">
-        <a className="brand" href="/home" aria-label="SkyGraph - início">
-          <span className="brand__mark" aria-hidden="true">
-            ✦
-          </span>
-          <span>
-            <strong>SKY</strong>GRAPH
-          </span>
-        </a>
+        <Logo />
         <button
           className="theme-toggle"
           type="button"
           onClick={toggleTheme}
           aria-label={darkMode ? 'Ativar modo claro' : 'Ativar modo noturno'}
         >
-          <span aria-hidden="true">{darkMode ? '☀' : '☾'}</span>
-          {darkMode ? 'Modo claro' : 'Modo noturno'}
+          {darkMode ? <SunIcon /> : <MoonIcon />}
+          <span className="theme-toggle__text">
+            {darkMode ? 'Modo claro' : 'Modo noturno'}
+          </span>
         </button>
       </header>
-      <section className="hero" aria-labelledby="page-title">
-        <div className="hero__route-line" aria-hidden="true">
-          <span />
-          <span className="hero__plane">✈</span>
-          <span />
-        </div>
-        <p className="eyebrow">Planeje com inteligência</p>
-        <h1 id="page-title">Encontre a melhor rota para sua viagem</h1>
-        <p className="hero__description">
-          Conecte aeroportos e descubra a rota mais barata para o seu próximo
-          destino.
+
+      {sampleData && (
+        <p className="sample-notice" aria-live="polite">
+          <span className="sample-notice__badge">Demonstração</span>
+          Servidor indisponível: mostrando os dados de exemplo do SkyGraph (40
+          aeroportos, 400 voos entre nov/2026 e mai/2027).
         </p>
+      )}
 
-        <RouteSearchForm
-          airports={airports}
-          origin={origin}
-          destination={destination}
-          departureDate={departureDate}
-          returnDate={returnDate}
-          loading={loading}
-          onOriginChange={setOrigin}
-          onDestinationChange={setDestination}
-          onDepartureDateChange={setDepartureDate}
-          onReturnDateChange={setReturnDate}
-          onSubmit={handleSubmit}
-        />
-
-        {error && (
-          <p className="feedback feedback--error" role="alert">
-            {error}
-          </p>
-        )}
-      </section>
-
-      {results && (
-        <section
-          className="results"
-          aria-labelledby="results-title"
-          ref={resultsRef}
-        >
-          <div className="results__heading">
-            <p className="eyebrow">Resultado</p>
-            <h2 id="results-title">
-              Rota de {origin.trim().toUpperCase()} para{' '}
-              {destination.trim().toUpperCase()}
-            </h2>
+      <main>
+        <section className="hero" aria-labelledby="page-title">
+          <div className="hero__copy">
+            <p className="eyebrow">Planeje com inteligência</p>
+            <h1 id="page-title">
+              Encontre a <span className="hero__highlight">melhor rota</span>{' '}
+              para sua viagem
+            </h1>
+            <p className="hero__description">
+              Conecte aeroportos e descubra a rota mais barata para o seu
+              próximo destino — mesmo que ela passe por uma conexão que você nem
+              imaginava.
+            </p>
+            <ul className="hero__facts">
+              <li>Menor preço total</li>
+              <li>Até 3 conexões</li>
+              <li>
+                {airports.length > 0
+                  ? `${airports.length} aeroportos no grafo`
+                  : 'Datas flexíveis'}
+              </li>
+            </ul>
           </div>
+          <NetworkArt className="hero__art" />
+        </section>
 
-          <div className="route-grid">
-            <RouteCard route={results.route} airports={airports} />
-          </div>
+        <section className="search-panel" aria-label="Buscar rota">
+          <RouteSearchForm
+            airports={airports}
+            origin={origin}
+            destination={destination}
+            departureDate={departureDate}
+            returnDate={returnDate}
+            loading={loading}
+            onOriginChange={setOrigin}
+            onDestinationChange={setDestination}
+            onSwap={swapAirports}
+            onDepartureDateChange={setDepartureDate}
+            onReturnDateChange={setReturnDate}
+            onSubmit={handleSubmit}
+          />
 
-          {results.route && (
-            <GlobeBoundary>
-              <Suspense
-                fallback={
-                  <p className="route-globe__loading">Carregando mapa 3D…</p>
-                }
-              >
-                <RouteGlobe route={results.route} airports={airports} />
-              </Suspense>
-            </GlobeBoundary>
+          {error && (
+            <p className="feedback feedback--error" role="alert">
+              <AlertIcon className="feedback__icon" />
+              {error}
+            </p>
           )}
         </section>
-      )}
-    </main>
+
+        {results && (
+          <section
+            className="results"
+            aria-labelledby="results-title"
+            ref={resultsRef}
+          >
+            <div className="results__heading">
+              <p className="eyebrow">Resultado</p>
+              <h2 id="results-title">
+                Rota de {origin.trim().toUpperCase()} para{' '}
+                {destination.trim().toUpperCase()}
+              </h2>
+            </div>
+
+            <div
+              className={`results__grid ${results.route ? '' : 'results__grid--single'}`}
+            >
+              <RouteCard route={results.route} airports={airports} />
+
+              {results.route && (
+                <GlobeBoundary>
+                  <Suspense
+                    fallback={
+                      <p className="route-globe__loading">
+                        Carregando mapa 3D…
+                      </p>
+                    }
+                  >
+                    <RouteGlobe route={results.route} airports={airports} />
+                  </Suspense>
+                </GlobeBoundary>
+              )}
+            </div>
+          </section>
+        )}
+      </main>
+
+      <footer className="footer">
+        <span>
+          SkyGraph · Projeto Integrador 3b — rotas calculadas sobre um grafo de
+          voos.
+        </span>
+      </footer>
+    </div>
   )
 }
