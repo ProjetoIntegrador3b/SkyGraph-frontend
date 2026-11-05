@@ -145,4 +145,72 @@ describe('AirportSelect', () => {
     await userEvent.tab()
     expect(screen.queryByRole('listbox')).not.toBeInTheDocument()
   })
+
+  describe('while the airport list is loading', () => {
+    // The page passes airports and loading; rerender stands in for the list
+    // arriving.
+    function LoadingHarness({
+      list,
+      loading,
+    }: {
+      list: Airport[]
+      loading: boolean
+    }) {
+      const [value, setValue] = useState('')
+      return (
+        <AirportSelect
+          id="origin"
+          label="Origem"
+          placeholder=""
+          value={value}
+          airports={list}
+          loading={loading}
+          onChange={setValue}
+        />
+      )
+    }
+
+    it('says the airports are loading instead of showing nothing', async () => {
+      render(<LoadingHarness list={[]} loading />)
+
+      await userEvent.type(screen.getByRole('combobox'), 'Bel')
+
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'Carregando aeroportos…',
+      )
+      expect(screen.queryByRole('listbox')).not.toBeInTheDocument()
+    })
+
+    it('shows the matches for what was typed once they arrive', async () => {
+      const { rerender } = render(<LoadingHarness list={[]} loading />)
+      await userEvent.type(screen.getByRole('combobox'), 'sao')
+
+      rerender(<LoadingHarness list={airports} loading={false} />)
+
+      expect(screen.queryByRole('status')).not.toBeInTheDocument()
+      expect(optionNames()).toEqual([
+        'Brasil - CGH - Aeroporto de Congonhas',
+        'Brasil - GRU - Aeroporto Internacional de Guarulhos',
+      ])
+    })
+
+    it('shows nothing once loading is over without airports', async () => {
+      render(<LoadingHarness list={[]} loading={false} />)
+
+      await userEvent.type(screen.getByRole('combobox'), 'Bel')
+
+      expect(screen.queryByRole('status')).not.toBeInTheDocument()
+      expect(screen.queryByRole('listbox')).not.toBeInTheDocument()
+    })
+
+    it('hides the loading message when the field loses focus', async () => {
+      render(<LoadingHarness list={[]} loading />)
+
+      await userEvent.click(screen.getByRole('combobox'))
+      expect(screen.getByRole('status')).toBeInTheDocument()
+
+      await userEvent.tab()
+      expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    })
+  })
 })

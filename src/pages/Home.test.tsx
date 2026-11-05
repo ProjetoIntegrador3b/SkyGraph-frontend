@@ -1,7 +1,7 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, vi } from 'vitest'
-import { mockApi } from '../test/api'
+import { airports, mockApi } from '../test/api'
 import Home from './Home'
 
 // jsdom has no WebGL; stand in for the globe and expose what it receives.
@@ -256,5 +256,31 @@ describe('Home', () => {
 
     await screen.findByText(/Nenhuma rota disponível/)
     expect(screen.queryByTestId('route-globe')).not.toBeInTheDocument()
+  })
+
+  it('shows the airports loading until a slow server answers', async () => {
+    let answer: (response: Response) => void = () => undefined
+    vi.spyOn(globalThis, 'fetch').mockImplementation(
+      () => new Promise((resolve) => (answer = resolve)),
+    )
+    render(<Home />)
+
+    await userEvent.type(screen.getByLabelText('Origem'), 'For')
+    // The page has other status regions (e.g. the period summary).
+    expect(screen.getByText('Carregando aeroportos…')).toHaveAttribute(
+      'role',
+      'status',
+    )
+
+    answer(
+      new Response(
+        JSON.stringify({ items: airports, page: 1, pageSize: 200, total: 2 }),
+      ),
+    )
+
+    expect(
+      await screen.findByRole('option', { name: /FOR - Aeroporto/ }),
+    ).toBeInTheDocument()
+    expect(screen.queryByText('Carregando aeroportos…')).not.toBeInTheDocument()
   })
 })

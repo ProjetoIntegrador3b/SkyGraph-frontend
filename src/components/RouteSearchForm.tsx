@@ -13,6 +13,7 @@ import {
 
 interface RouteSearchFormProps {
   airports: Airport[]
+  airportsLoading?: boolean
   origin: string
   destination: string
   departureDate: string
@@ -37,6 +38,7 @@ function describePeriod(departureDate: string, returnDate: string) {
 
 export default function RouteSearchForm({
   airports,
+  airportsLoading = false,
   origin,
   destination,
   departureDate,
@@ -60,6 +62,7 @@ export default function RouteSearchForm({
             placeholder="GRU ou São Paulo"
             value={origin}
             airports={airports}
+            loading={airportsLoading}
             onChange={onOriginChange}
           />
 
@@ -81,6 +84,7 @@ export default function RouteSearchForm({
             placeholder="JFK ou Nova York"
             value={destination}
             airports={airports}
+            loading={airportsLoading}
             onChange={onDestinationChange}
           />
         </div>

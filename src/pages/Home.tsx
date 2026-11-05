@@ -33,6 +33,9 @@ export default function Home() {
   const [departureDate, setDepartureDate] = useState('')
   const [returnDate, setReturnDate] = useState('')
   const [airports, setAirports] = useState<Airport[]>([])
+  // True until the airport list arrives (from the API or the sample data) or
+  // fails; the suggestion dropdown shows a loading state meanwhile.
+  const [airportsLoading, setAirportsLoading] = useState(true)
   const [results, setResults] = useState<RouteSearchResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -51,6 +54,9 @@ export default function Home() {
         if (active) setAirports(list)
       })
       .catch(() => undefined)
+      .finally(() => {
+        if (active) setAirportsLoading(false)
+      })
     return () => {
       active = false
     }
@@ -189,6 +195,7 @@ export default function Home() {
         <section className="search-panel" aria-label="Buscar rota">
           <RouteSearchForm
             airports={airports}
+            airportsLoading={airportsLoading}
             origin={origin}
             destination={destination}
             departureDate={departureDate}
