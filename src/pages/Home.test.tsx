@@ -52,7 +52,9 @@ function sentSearch(fetch: ReturnType<typeof mockApi>) {
 describe('Home', () => {
   beforeEach(() => {
     localStorage.clear()
+    // Pin the defaults, whatever the developer's .env.local says.
     vi.stubEnv('VITE_USE_MOCK_API', 'false')
+    vi.stubEnv('VITE_SAMPLE_FALLBACK', 'true')
   })
 
   afterEach(() => {
@@ -246,6 +248,24 @@ describe('Home', () => {
     expect(within(legs).getAllByRole('listitem')).toHaveLength(3)
     expect(screen.getByText('2 conexões')).toBeInTheDocument()
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  it('keeps the heading on the searched route when the fields change', async () => {
+    mockApi()
+    render(<Home />)
+    await search('GRU', 'JFK', {})
+    expect(
+      await screen.findByRole('heading', { name: 'Rota de GRU para JFK' }),
+    ).toBeInTheDocument()
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Inverter origem e destino' }),
+    )
+
+    expect(screen.getByLabelText('Origem')).toHaveValue('JFK')
+    expect(
+      screen.getByRole('heading', { name: 'Rota de GRU para JFK' }),
+    ).toBeInTheDocument()
   })
 
   it('shows no globe when no route fits', async () => {

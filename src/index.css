@@ -700,8 +700,12 @@ h3 {
   cursor: pointer;
 }
 
+/* The active option (arrow keys or hover) is what Enter picks. Options take
+   no focus, so this is the only cue: the bar keeps it visible in both themes
+   (the background alone is too faint), without tinting the code badge. */
 .airport-option[aria-selected='true'] {
   background: var(--field-bg-hover);
+  box-shadow: inset 3px 0 0 var(--accent-text);
 }
 
 .airport-option__sep {
@@ -1550,6 +1554,12 @@ h3 {
 
   .search-bar__airports {
     grid-column: 1 / -1;
+  }
+
+  /* Each airport takes half the row here, so a list wider than its field
+     would run off the screen from the Destino side. */
+  .airport-options {
+    width: 100%;
   }
 }
 

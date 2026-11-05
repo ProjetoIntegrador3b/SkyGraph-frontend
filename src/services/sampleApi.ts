@@ -15,12 +15,18 @@ interface SampleNetwork {
   flights: Flight[]
 }
 
-// Loaded on first use, so the data stays out of the main bundle.
+// Loaded on first use, so the data stays out of the main bundle. If the chunk
+// cannot be loaded (offline, or gone after a redeploy), searches show the
+// usual "cannot connect" message rather than the browser's own error.
+// Browsers remember a failed module, so retrying the import would not help.
 let network: Promise<SampleNetwork> | undefined
 
 function loadNetwork() {
   network ??= import('../data/sample-network.json').then(
     (module) => module.default as SampleNetwork,
+    () => {
+      throw new ApiError(0, errorMessage(0))
+    },
   )
   return network
 }
