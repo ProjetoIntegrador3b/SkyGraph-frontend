@@ -258,10 +258,13 @@ settings; `localhost:5173`, `localhost:3000` and the Vercel domains already are.
 
 `src/data/sample-network.json` is a snapshot of the backend's seed data
 (`initial_data_csv/aeroportos.csv` and `voos.csv`: 40 airports, 400 flights).
-`src/utils/cheapestRoute.ts` searches it with the same rules as the backend's
-Cypher query (period, connections on or after the previous landing, at most 4
-flights, ties to fewer flights then earliest arrival); it was checked against a
-live backend on all 1,560 airport pairs in four periods with no difference.
+`src/utils/cheapestRoute.ts` searches it with the same algorithm and rules as
+the backend: **Dijkstra on a time-expanded graph** (a node is an airport on a
+day, a flight is an edge weighted by its price, waiting at an airport is a
+free edge), over the flights in the period, with connections on or after the
+previous landing, any number of connections, and ties to fewer flights then
+the earliest arrival. It gives the same legs and price as the backend's
+`app/services/dijkstra.py` on all 1,560 airport pairs in five periods.
 
 The app answers from this data in two cases:
 
