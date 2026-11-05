@@ -92,15 +92,52 @@ describe('cheapestRoute', () => {
     expect(route?.arrivalDate).toBe('2027-01-11')
   })
 
-  it('stops at four flights', () => {
-    const chain = ['A', 'B', 'C', 'D', 'E', 'F']
+  it('has no limit on the number of connections', () => {
+    const chain = ['A', 'B', 'C', 'D', 'E', 'F', 'G']
     const flights = chain
       .slice(1)
       .map((code, index) => flight(chain[index], code, 10, '2027-01-10'))
 
+    const route = cheapestRoute(flights, { origin: 'A', destination: 'G' })
+
+    expect(route?.legs).toHaveLength(6)
+    expect(route?.connections).toBe(5)
+  })
+
+  // Plain Dijkstra over airports would keep only the cheapest way into MIA,
+  // which lands after the only flight onwards has left.
+  it('keeps a pricier arrival when only it makes the connection', () => {
+    const flights = [
+      flight('GRU', 'MIA', 100, '2027-01-09'),
+      flight('GRU', 'MIA', 500, '2027-01-03'),
+      flight('MIA', 'JFK', 400, '2027-01-05'),
+    ]
+
+    const route = cheapestRoute(flights, { origin: 'GRU', destination: 'JFK' })
+
+    expect(route?.price).toBe(900)
+    expect(route?.legs[0].departureDate).toBe('2027-01-03')
+  })
+
+  it('waits at an airport for a later flight', () => {
+    const flights = [
+      flight('GRU', 'MIA', 300, '2027-01-03'),
+      flight('MIA', 'JFK', 200, '2027-01-20'),
+    ]
+
     expect(
-      cheapestRoute(flights, { origin: 'A', destination: 'E' })?.legs,
-    ).toHaveLength(4)
-    expect(cheapestRoute(flights, { origin: 'A', destination: 'F' })).toBeNull()
+      uuids(cheapestRoute(flights, { origin: 'GRU', destination: 'JFK' })),
+    ).toEqual(['GRU-MIA', 'MIA-JFK'])
+  })
+
+  it('adds prices in whole cents', () => {
+    const flights = [
+      flight('GRU', 'MIA', 0.1, '2027-01-10'),
+      flight('MIA', 'JFK', 0.2, '2027-01-10'),
+    ]
+
+    expect(
+      cheapestRoute(flights, { origin: 'GRU', destination: 'JFK' })?.price,
+    ).toBe(0.3)
   })
 })
