@@ -181,7 +181,7 @@ export default function Home() {
             </p>
             <ul className="hero__facts">
               <li>Menor preço total</li>
-              <li>Até 3 conexões</li>
+              <li>Algoritmo de Dijkstra</li>
               <li>
                 {airports.length > 0
                   ? `${airports.length} aeroportos no grafo`
