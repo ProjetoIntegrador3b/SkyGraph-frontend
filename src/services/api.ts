@@ -60,9 +60,15 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 // Whether the page is showing sample data instead of the API's. Components
-// subscribe to show a notice. Once the API has failed, the rest of the visit
-// stays on the sample data: consistent answers, and no timeout per search.
+// subscribe to show a notice. Once the API has failed, requests stay on the
+// sample data for a while (no 12 s timeout per search during an outage), then
+// the next one tries the API again, so a server that has finished starting up
+// (e.g. after a cold start) is used again.
+const SAMPLE_RETRY_MS = 60_000
+
 let usingSampleData = false
+// When the API last failed; the sample-only window counts from here.
+let sampleSince = 0
 const listeners = new Set<() => void>()
 
 export function isUsingSampleData() {
@@ -79,31 +85,47 @@ export function subscribeToSampleData(listener: () => void) {
 // For tests, which share this module between cases.
 export function resetSampleData() {
   usingSampleData = false
+  sampleSince = 0
 }
 
-function markSampleData() {
-  if (usingSampleData) return
-  usingSampleData = true
+function setSampleData(value: boolean) {
+  if (usingSampleData === value) return
+  usingSampleData = value
   listeners.forEach((listener) => listener())
+}
+
+// Each failure restarts the sample-only window.
+function markSampleData() {
+  sampleSince = Date.now()
+  setSampleData(true)
 }
 
 // Asks the API; answers from the sample data in mock mode, or when the API
 // is unreachable or failing (no response, or a 5xx). Errors about the search
-// itself (404, 422) are real answers and pass through.
+// itself (404, 422) are real answers and pass through. Any answer from the
+// server shows it is up again, which ends the sample data.
 export async function withSampleFallback<T>(
   live: () => Promise<T>,
   sample: () => Promise<T>,
 ): Promise<T> {
-  if (isMockApi() || usingSampleData) {
+  if (isMockApi()) {
     markSampleData()
     return sample()
   }
+  if (usingSampleData && Date.now() - sampleSince < SAMPLE_RETRY_MS) {
+    return sample()
+  }
   try {
-    return await live()
+    const result = await live()
+    setSampleData(false)
+    return result
   } catch (error) {
     const down =
       error instanceof ApiError && (error.status === 0 || error.status >= 500)
-    if (!down || !sampleFallbackEnabled()) throw error
+    if (!down || !sampleFallbackEnabled()) {
+      if (error instanceof ApiError && !down) setSampleData(false)
+      throw error
+    }
     markSampleData()
     return sample()
   }

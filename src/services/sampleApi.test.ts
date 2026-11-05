@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ApiError } from './api'
 import { sampleAirports, sampleRouteSearch } from './sampleApi'
 
@@ -33,5 +33,32 @@ describe('sample API', () => {
 
     expect(error).toBeInstanceOf(ApiError)
     expect((error as ApiError).status).toBe(404)
+  })
+})
+
+describe('sample API when its data cannot be loaded', () => {
+  afterEach(() => {
+    vi.doUnmock('../data/sample-network.json')
+    vi.resetModules()
+  })
+
+  it('answers with the usual connection message', async () => {
+    vi.resetModules()
+    vi.doMock('../data/sample-network.json', () => {
+      throw new Error('Failed to fetch dynamically imported module')
+    })
+    // A fresh copy, so its data is loaded through the failing mock.
+    const fresh = await import('./sampleApi')
+    const { ApiError: FreshApiError } = await import('./api')
+
+    const error = await fresh
+      .sampleRouteSearch({ origin: 'POA', destination: 'LHR' })
+      .catch((caught: unknown) => caught)
+
+    expect(error).toBeInstanceOf(FreshApiError)
+    expect((error as ApiError).status).toBe(0)
+    expect((error as ApiError).message).toContain(
+      'Não foi possível conectar ao servidor',
+    )
   })
 })
