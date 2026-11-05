@@ -1,9 +1,17 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
-import { ApiError, isUsingSampleData, request, withSampleFallback } from './api'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  ApiError,
+  isUsingSampleData,
+  request,
+  subscribeToSampleData,
+  withSampleFallback,
+} from './api'
 
 describe('request', () => {
   afterEach(() => {
     vi.restoreAllMocks()
+    // Here, not in the test, so a failing assertion can't leak fake timers.
+    vi.useRealTimers()
   })
 
   it('returns the parsed body', async () => {
@@ -47,7 +55,6 @@ describe('request', () => {
     await vi.advanceTimersByTimeAsync(12_000)
 
     expect(((await pending) as ApiError).status).toBe(0)
-    vi.useRealTimers()
   })
 
   it('explains when the server cannot be reached', async () => {
@@ -64,8 +71,17 @@ describe('withSampleFallback', () => {
   const failing = (status: number) => () =>
     Promise.reject(new ApiError(status, 'failed'))
 
+  // Pin the defaults, so a developer's .env.local (e.g. mock mode on, as the
+  // README suggests) can't change the outcome. Tests that need another value
+  // stub it themselves.
+  beforeEach(() => {
+    vi.stubEnv('VITE_USE_MOCK_API', 'false')
+    vi.stubEnv('VITE_SAMPLE_FALLBACK', 'true')
+  })
+
   afterEach(() => {
     vi.unstubAllEnvs()
+    vi.useRealTimers()
   })
 
   it('answers from the API when it is up', async () => {
@@ -96,6 +112,46 @@ describe('withSampleFallback', () => {
 
     await expect(withSampleFallback(live, sample)).resolves.toBe('sample')
     expect(live).not.toHaveBeenCalled()
+  })
+
+  it('tries the API again a minute later and leaves the sample data', async () => {
+    vi.useFakeTimers()
+    await withSampleFallback(failing(503), sample)
+    const notified = vi.fn()
+    const unsubscribe = subscribeToSampleData(notified)
+
+    vi.advanceTimersByTime(60_000)
+
+    await expect(
+      withSampleFallback(() => Promise.resolve('live'), sample),
+    ).resolves.toBe('live')
+    expect(isUsingSampleData()).toBe(false)
+    expect(notified).toHaveBeenCalledTimes(1)
+    unsubscribe()
+  })
+
+  it('stays on the sample data for another minute if the API is still down', async () => {
+    vi.useFakeTimers()
+    await withSampleFallback(failing(503), sample)
+    vi.advanceTimersByTime(60_000)
+
+    await expect(withSampleFallback(failing(0), sample)).resolves.toBe('sample')
+    const live = vi.fn()
+    vi.advanceTimersByTime(59_000)
+    await expect(withSampleFallback(live, sample)).resolves.toBe('sample')
+    expect(live).not.toHaveBeenCalled()
+    expect(isUsingSampleData()).toBe(true)
+  })
+
+  it('leaves the sample data when the API answers with a search error', async () => {
+    vi.useFakeTimers()
+    await withSampleFallback(failing(503), sample)
+    vi.advanceTimersByTime(60_000)
+
+    await expect(withSampleFallback(failing(404), sample)).rejects.toThrow(
+      'failed',
+    )
+    expect(isUsingSampleData()).toBe(false)
   })
 
   it('can be turned off', async () => {

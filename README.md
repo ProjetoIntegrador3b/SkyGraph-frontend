@@ -123,7 +123,7 @@ src/
 │   ├── api.ts           # API address, fetch wrapper, readable error messages
 │   ├── airports.ts      # GET /api/airports — airport suggestions
 │   ├── routes.ts        # POST /api/routes — cheapest route search
-│   └── mockRoutes.ts    # Sample data for mock mode
+│   └── sampleApi.ts     # Answers from the sample data (mock mode, fallback)
 ├── types/               # Airport, Flight and route types, as the API sends them
 ├── utils/
 │   ├── dates.ts         # Parsing and formatting of YYYY-MM-DD days
@@ -269,8 +269,11 @@ The app answers from this data in two cases:
   to work on the UI with no backend at all.
 - **Automatic fallback** — when the API cannot be reached, does not answer
   within 12 seconds, or answers with a 5xx, the page switches to the sample
-  data for the rest of the visit and shows a "Demonstração" notice. Search
-  errors (404, 422) are real answers and are shown as usual. Set
+  data and shows a "Demonstração" notice. For a minute after the last failure
+  it answers from the sample without calling the API (no 12-second wait per
+  search during an outage); the next request then tries the API again, and any
+  answer from it (a result, or a search error) ends the notice. Search errors
+  (404, 422) are real answers and are shown as usual. Set
   `VITE_SAMPLE_FALLBACK=false` to turn the fallback off.
 
 The data is loaded as a separate chunk (about 17 KB gzipped) only when one of
