@@ -8,6 +8,8 @@ interface AirportSelectProps {
   placeholder: string
   value: string
   airports: Airport[]
+  // The airport list is still on its way: show a loading state, not nothing.
+  loading?: boolean
   onChange: (value: string) => void
 }
 
@@ -52,6 +54,7 @@ export default function AirportSelect({
   placeholder,
   value,
   airports,
+  loading = false,
   onChange,
 }: AirportSelectProps) {
   const [open, setOpen] = useState(false)
@@ -59,6 +62,7 @@ export default function AirportSelect({
   const options = useMemo(() => matching(airports, value), [airports, value])
   const listId = `${id}-options`
   const showList = open && options.length > 0
+  const showLoading = open && loading && airports.length === 0
   // The airport the typed code names, shown under the field.
   const known = airports.find(
     (airport) => airport.code === value.trim().toUpperCase(),
@@ -90,7 +94,9 @@ export default function AirportSelect({
   }
 
   return (
-    <div className={`field airport-select ${showList ? 'is-open' : ''}`}>
+    <div
+      className={`field airport-select ${showList || showLoading ? 'is-open' : ''}`}
+    >
       <label htmlFor={id}>
         {icon && <span className="field__icon">{icon}</span>}
         {label}
@@ -155,6 +161,14 @@ export default function AirportSelect({
             </li>
           ))}
         </ul>
+      )}
+      {showLoading && (
+        // Outside the listbox: it says what is happening, there is nothing
+        // to pick. Typed codes still work while it shows.
+        <div className="airport-options airport-options--loading" role="status">
+          <span className="spinner" aria-hidden="true" />
+          Carregando aeroportos…
+        </div>
       )}
     </div>
   )
