@@ -34,6 +34,11 @@ export default function Home() {
   const [returnDate, setReturnDate] = useState('')
   const [airports, setAirports] = useState<Airport[]>([])
   const [results, setResults] = useState<RouteSearchResponse | null>(null)
+  // The airports of the search that produced `results`. The heading reads
+  // these, not the fields, which may have been edited or swapped since.
+  const [searched, setSearched] = useState<{ from: string; to: string } | null>(
+    null,
+  )
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const resultsRef = useRef<HTMLElement>(null)
@@ -121,8 +126,10 @@ export default function Home() {
         ...(returnDate && { returnDate }),
       })
       setResults(response)
+      setSearched({ from, to })
     } catch (requestError) {
       setResults(null)
+      setSearched(null)
       setError(
         requestError instanceof Error
           ? requestError.message
@@ -219,8 +226,7 @@ export default function Home() {
             <div className="results__heading">
               <p className="eyebrow">Resultado</p>
               <h2 id="results-title">
-                Rota de {origin.trim().toUpperCase()} para{' '}
-                {destination.trim().toUpperCase()}
+                Rota de {searched?.from} para {searched?.to}
               </h2>
             </div>
 
