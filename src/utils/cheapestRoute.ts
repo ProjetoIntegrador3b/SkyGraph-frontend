@@ -56,7 +56,7 @@ export function traceCheapestRoute(
   return { route: legs && toRoute(legs), trace }
 }
 
-function flightsInPeriod(flights: Flight[], search: RouteSearchRequest) {
+export function flightsInPeriod(flights: Flight[], search: RouteSearchRequest) {
   return flights.filter(
     (flight) =>
       (!search.departureDate || flight.departureDate >= search.departureDate) &&
@@ -64,7 +64,7 @@ function flightsInPeriod(flights: Flight[], search: RouteSearchRequest) {
   )
 }
 
-function toRoute(legs: Flight[]): RouteResult {
+export function toRoute(legs: Flight[]): RouteResult {
   const price = legs.reduce((total, leg) => total + cents(leg.price), 0)
   return {
     price: price / 100,

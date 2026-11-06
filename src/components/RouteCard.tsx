@@ -1,27 +1,15 @@
 import type { Airport } from '../types/airport'
 import type { RouteResult } from '../types/route'
-import { formatDay } from '../utils/dates'
+import {
+  connectionsLabel,
+  formatPeriod,
+  priceFormatter,
+} from '../utils/routeText'
 import { PlaneIcon } from './icons'
 
 interface RouteCardProps {
   route: RouteResult | null
   airports: Airport[]
-}
-
-const priceFormatter = new Intl.NumberFormat('pt-BR', {
-  style: 'currency',
-  currency: 'BRL',
-})
-
-function formatPeriod(departure: string, arrival: string) {
-  return departure === arrival
-    ? formatDay(departure)
-    : `${formatDay(departure)} → ${formatDay(arrival)}`
-}
-
-function connectionsLabel(connections: number) {
-  if (connections === 0) return 'Voo direto'
-  return connections === 1 ? '1 conexão' : `${connections} conexões`
 }
 
 // The result as a boarding pass: the two ends, the stops between them, the
