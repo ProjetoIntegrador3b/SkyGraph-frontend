@@ -35,6 +35,11 @@ function loadNetwork() {
 const delay = (ms: number) =>
   new Promise((resolve) => window.setTimeout(resolve, ms))
 
+// The whole network, for the graph explorer's replay of the search.
+export function sampleNetwork(): Promise<SampleNetwork> {
+  return loadNetwork()
+}
+
 export async function sampleAirports(): Promise<Airport[]> {
   const { airports } = await loadNetwork()
   return airports

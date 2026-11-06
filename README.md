@@ -118,7 +118,8 @@ src/
 │   └── Home.tsx         # Route search screen
 ├── components/          # RouteSearchForm, AirportSelect, DateRangePicker,
 │                        # RouteCard, RouteGlobe (3D map), GlobeBoundary,
-│                        # Logo, NetworkArt (hero illustration) and icons
+│                        # Logo, NetworkArt (hero illustration), icons,
+│                        # GraphExplorer and graphCanvas (search replay)
 ├── services/
 │   ├── api.ts           # API address, fetch wrapper, readable error messages
 │   ├── airports.ts      # GET /api/airports — airport suggestions
@@ -236,6 +237,44 @@ between them. Drag to rotate; scroll or pinch to zoom.
 - Browsers without WebGL show a short note instead; the rest of the result is
   unaffected.
 - Tests stand in for the globe, since jsdom has no WebGL.
+
+### Graph explorer
+
+Under every result, **Ver o grafo da busca** opens a full-screen replay of how
+Dijkstra found the route, step by step.
+
+- **Where the steps come from:** the API returns only the route. So the
+  explorer reruns the same search in the browser, on the bundled sample data
+  (a snapshot of the backend's seed data), with the same Dijkstra the backend
+  runs. The search records each node taken from the queue and each edge
+  relaxed (`traceCheapestRoute` in `src/utils/cheapestRoute.ts`, and the
+  replay in `src/utils/dijkstraTrace.ts`). A badge says whether the replay
+  found the same route as the API.
+- **Two views of the same search:**
+  - **Grafo no tempo**: the time-expanded graph Dijkstra actually runs on.
+    There is one row per airport and days run left to right. A flight is a
+    curve between rows, and a wait at an airport is a free segment along its
+    row.
+  - **Mapa**: the airports where they are. Each arc is the flight that first
+    reached an airport at its cheapest, which is the shortest-path tree.
+- **What it shows:**
+  - Visited nodes, coloured by accumulated cost (cheap is blue, expensive is
+    orange).
+  - The priority queue, as rings.
+  - The node being visited, which pulses, and the edges it relaxes.
+  - At the end, the cheapest route, glowing.
+- **Side panel:**
+  - What happens at each step.
+  - The head of the priority queue.
+  - Counts: nodes, edges, visited, queued, relaxations.
+  - A legend.
+- **Controls:**
+  - Play and pause, step forward and back, the start and the end, a timeline
+    scrubber, and 0.5× to 4× speed.
+  - Keyboard: Space plays and pauses, ← and → step, Esc closes.
+  - With reduced motion, the replay opens on the result instead of playing.
+- **Loading:** the explorer is drawn on a canvas and loaded only when opened,
+  as about 8 KB gzipped plus the shared sample data and world outlines.
 
 ### Which backend the app calls
 
