@@ -190,6 +190,35 @@ describe('GraphExplorer', () => {
     expect(onClose).toHaveBeenCalled()
   })
 
+  // The sidebar's sections have fixed heights (index.css), so its parts
+  // that change with the step must stay in place even when empty;
+  // otherwise every step moves the sections below.
+  it('keeps the step edges and the queue in place on every step', async () => {
+    const user = userEvent.setup()
+    await open()
+
+    await user.click(screen.getByRole('button', { name: 'Voltar ao início' }))
+    const edges = screen.getByRole('list', { name: 'Arestas do passo' })
+    expect(within(edges).queryAllByRole('listitem')).toHaveLength(0)
+
+    await user.click(screen.getByRole('button', { name: 'Próximo passo' }))
+    expect(
+      screen.getByRole('list', { name: 'Arestas do passo' }),
+    ).not.toBeEmptyDOMElement()
+
+    await user.click(
+      screen.getByRole('button', { name: 'Ir para o resultado' }),
+    )
+    expect(
+      within(
+        screen.getByRole('list', { name: 'Arestas do passo' }),
+      ).queryAllByRole('listitem'),
+    ).toHaveLength(0)
+    expect(
+      screen.getByRole('heading', { name: 'Números da busca' }),
+    ).toBeInTheDocument()
+  })
+
   it('offers slower speeds for following each step', async () => {
     const user = userEvent.setup()
     await open()

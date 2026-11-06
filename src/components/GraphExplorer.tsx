@@ -697,30 +697,31 @@ function Narrative({
       className="graph-explorer__narrative"
       aria-live={playing ? 'off' : 'polite'}
     >
+      <p className="graph-explorer__section-label">Passo atual</p>
       <h3>{title}</h3>
       <p>{body}</p>
-      {edges.length > 0 && (
-        <ul className="graph-explorer__edges">
-          {edges.map((edge) => (
-            <li key={edge.to + (edge.flight?.uuid ?? 'wait')}>
-              <span className={edge.improved ? 'is-better' : 'is-worse'}>
-                {edge.improved ? '✓' : '✗'}
-              </span>
-              {edge.flight
-                ? `${edge.flight.origin} → ${edge.flight.destination}`
-                : `espera até ${formatDay(dayOf(edge.to))}`}
-              <span className="graph-explorer__edge-price">
-                {price(edge.cents)}
-              </span>
-            </li>
-          ))}
-          {current!.relaxed.length > 4 && (
-            <li className="graph-explorer__more">
-              + {current!.relaxed.length - 4} arestas
-            </li>
-          )}
-        </ul>
-      )}
+      {/* Always there, even empty, with room for 4 edges and the "+ N
+          arestas" line, so the sections below never move. */}
+      <ul className="graph-explorer__edges" aria-label="Arestas do passo">
+        {edges.map((edge) => (
+          <li key={edge.to + (edge.flight?.uuid ?? 'wait')}>
+            <span className={edge.improved ? 'is-better' : 'is-worse'}>
+              {edge.improved ? '✓' : '✗'}
+            </span>
+            {edge.flight
+              ? `${edge.flight.origin} → ${edge.flight.destination}`
+              : `espera até ${formatDay(dayOf(edge.to))}`}
+            <span className="graph-explorer__edge-price">
+              {price(edge.cents)}
+            </span>
+          </li>
+        ))}
+        {edges.length > 0 && current!.relaxed.length > 4 && (
+          <li className="graph-explorer__more">
+            + {current!.relaxed.length - 4} arestas
+          </li>
+        )}
+      </ul>
     </section>
   )
 }
@@ -736,14 +737,17 @@ function Stats({ loaded, state }: { loaded: Loaded; state: TraceState }) {
     ['Melhorias', state.improvements],
   ] as const
   return (
-    <dl className="graph-explorer__stats">
-      {items.map(([label, value]) => (
-        <div key={label}>
-          <dt>{label}</dt>
-          <dd>{value}</dd>
-        </div>
-      ))}
-    </dl>
+    <section className="graph-explorer__counts">
+      <h3>Números da busca</h3>
+      <dl className="graph-explorer__stats">
+        {items.map(([label, value]) => (
+          <div key={label}>
+            <dt>{label}</dt>
+            <dd>{value}</dd>
+          </div>
+        ))}
+      </dl>
+    </section>
   )
 }
 
@@ -752,26 +756,29 @@ function Queue({ state }: { state: TraceState }) {
   return (
     <section className="graph-explorer__queue">
       <h3>Fila de prioridade</h3>
-      {queue.length === 0 ? (
-        <p className="graph-explorer__empty">Vazia</p>
-      ) : (
-        <ol>
-          {queue.slice(0, 5).map((key) => {
-            const label = state.best.get(key)!
-            return (
-              <li key={key}>
-                <span>{nodeName(key)}</span>
-                <span className="graph-explorer__edge-price">
-                  {price(label.cents)}
-                </span>
-              </li>
-            )
-          })}
-          {queue.length > 5 && (
-            <li className="graph-explorer__more">+ {queue.length - 5} nós</li>
-          )}
-        </ol>
-      )}
+      {/* A fixed box with room for 5 nodes and the "+ N nós" line. */}
+      <div className="graph-explorer__queue-box">
+        {queue.length === 0 ? (
+          <p className="graph-explorer__empty">Vazia</p>
+        ) : (
+          <ol>
+            {queue.slice(0, 5).map((key) => {
+              const label = state.best.get(key)!
+              return (
+                <li key={key}>
+                  <span>{nodeName(key)}</span>
+                  <span className="graph-explorer__edge-price">
+                    {price(label.cents)}
+                  </span>
+                </li>
+              )
+            })}
+            {queue.length > 5 && (
+              <li className="graph-explorer__more">+ {queue.length - 5} nós</li>
+            )}
+          </ol>
+        )}
+      </div>
     </section>
   )
 }
