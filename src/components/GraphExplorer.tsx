@@ -1,11 +1,4 @@
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type KeyboardEvent,
-  type PointerEvent,
-} from 'react'
+import { useEffect, useMemo, useRef, useState, type PointerEvent } from 'react'
 import { fetchRouteTrace, type RouteTrace } from '../services/routeTrace'
 import type { Airport } from '../types/airport'
 import type { RouteResult, RouteSearchRequest } from '../types/route'
@@ -259,24 +252,29 @@ export default function GraphExplorer({
     setPlaying((current) => !current)
   }
 
-  function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+  function handleKeyDown(event: KeyboardEvent) {
     const target = event.target as HTMLElement
     const typing = target.tagName === 'INPUT'
     if (event.key === 'Escape') {
       event.preventDefault()
       onClose()
     } else if (event.key === 'Tab') {
-      // Keep the focus inside the dialog.
+      // Keep the focus inside the dialog, and bring it back when it has
+      // fallen to the page behind (see the listener below).
       const focusable = dialogRef.current?.querySelectorAll<HTMLElement>(
         'button:not([disabled]), input:not([disabled])',
       )
       if (!focusable?.length) return
       const first = focusable[0]
       const end = focusable[focusable.length - 1]
-      if (event.shiftKey && document.activeElement === first) {
+      const inside = dialogRef.current!.contains(document.activeElement)
+      if (event.shiftKey && (!inside || document.activeElement === first)) {
         event.preventDefault()
         end.focus()
-      } else if (!event.shiftKey && document.activeElement === end) {
+      } else if (
+        !event.shiftKey &&
+        (!inside || document.activeElement === end)
+      ) {
         event.preventDefault()
         first.focus()
       }
@@ -291,6 +289,21 @@ export default function GraphExplorer({
       togglePlay()
     }
   }
+
+  // The keys are heard on the whole document, not just the dialog: clicking
+  // a control that then disables itself ("Ir para o resultado" at the end),
+  // or the canvas, which takes no focus, drops the focus to the page, and
+  // the keys would stop reaching the dialog. The listener stays put and calls
+  // the latest handler, so it sees the current step.
+  const keyHandler = useRef(handleKeyDown)
+  useEffect(() => {
+    keyHandler.current = handleKeyDown
+  })
+  useEffect(() => {
+    const listener = (event: KeyboardEvent) => keyHandler.current(event)
+    document.addEventListener('keydown', listener)
+    return () => document.removeEventListener('keydown', listener)
+  }, [])
 
   function handlePointerMove(event: PointerEvent<HTMLCanvasElement>) {
     if (!layout) return
@@ -316,7 +329,6 @@ export default function GraphExplorer({
       aria-modal="true"
       aria-labelledby="graph-explorer-title"
       ref={dialogRef}
-      onKeyDown={handleKeyDown}
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose()
       }}

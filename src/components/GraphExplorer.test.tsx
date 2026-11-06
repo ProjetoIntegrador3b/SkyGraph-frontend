@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import network from '../data/sample-network.json'
@@ -167,5 +167,41 @@ describe('GraphExplorer', () => {
     await user.keyboard('{Escape}')
 
     expect(onClose).toHaveBeenCalled()
+  })
+
+  // A button that disables itself when clicked ("Ir para o resultado" at the
+  // end) drops the focus to the page, and so does clicking the canvas, so the
+  // browser sends the keys to <body>. jsdom keeps the focus on a disabled
+  // button, so the test sends them to <body> itself.
+  it('keeps the keyboard controls when the focus leaves the dialog', async () => {
+    const user = userEvent.setup()
+    const onClose = await open()
+
+    await user.click(
+      screen.getByRole('button', { name: 'Ir para o resultado' }),
+    )
+    const counter = screen.getByText(/^\d+\/\d+$/)
+    const [, total] = counter.textContent!.split('/')
+
+    fireEvent.keyDown(document.body, { key: 'ArrowLeft' })
+    expect(counter).toHaveTextContent(`${Number(total) - 1}/${total}`)
+
+    fireEvent.keyDown(document.body, { key: 'Escape' })
+    expect(onClose).toHaveBeenCalled()
+  })
+
+  it('brings Tab back into the dialog when the focus left it', async () => {
+    const user = userEvent.setup()
+    // The page behind the modal has controls of its own, first in the
+    // document, where Tab from the page would otherwise go.
+    render(<button type="button">Modo claro</button>)
+    await open()
+
+    ;(document.activeElement as HTMLElement).blur()
+    await user.tab()
+
+    expect(screen.getByRole('dialog')).toContainElement(
+      document.activeElement as HTMLElement,
+    )
   })
 })
