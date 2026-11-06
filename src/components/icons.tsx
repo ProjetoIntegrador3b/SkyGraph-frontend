@@ -132,3 +132,44 @@ export function AlertIcon(props: IconProps) {
     </Icon>
   )
 }
+
+export function PlayIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M8 5.5v13l10.5-6.5Z" fill="currentColor" />
+    </Icon>
+  )
+}
+
+export function PauseIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M8.5 5.5v13M15.5 5.5v13" strokeWidth="2.6" />
+    </Icon>
+  )
+}
+
+export function SkipIcon(props: IconProps & { direction: 'back' | 'forward' }) {
+  const { direction, ...rest } = props
+  return (
+    <Icon {...rest}>
+      {direction === 'back' ? (
+        <path d="M6 5v14M18 6l-8 6 8 6Z" />
+      ) : (
+        <path d="M18 5v14M6 6l8 6-8 6Z" />
+      )}
+    </Icon>
+  )
+}
+
+// Three nodes and their edges: the "see the graph" button.
+export function GraphIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M7.5 7.8 16 6.4M6.6 9.4l4 7.3M17.4 8.6l-4.6 8.2" />
+      <circle cx="5.5" cy="7.5" r="2.5" />
+      <circle cx="18.5" cy="6" r="2.5" />
+      <circle cx="12" cy="18.5" r="2.5" />
+    </Icon>
+  )
+}

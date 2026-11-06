@@ -1,4 +1,5 @@
 import type { Flight, RouteResult, RouteSearchRequest } from '../types/route'
+import type { DijkstraTrace } from './dijkstraTrace'
 
 // The cheapest route, by the same rules and the same algorithm as the
 // backend (app/services/dijkstra.py): Dijkstra on a time-expanded graph.
@@ -21,14 +22,49 @@ export function cheapestRoute(
   flights: Flight[],
   search: RouteSearchRequest,
 ): RouteResult | null {
-  const usable = flights.filter(
+  const legs = dijkstra(
+    flightsInPeriod(flights, search),
+    search.origin,
+    search.destination,
+  )
+  return legs && toRoute(legs)
+}
+
+// The same search, recording every step for the graph explorer: the graph,
+// each node taken from the queue and each edge relaxed. Same code path as
+// cheapestRoute, so the replay is exactly what the search does.
+export function traceCheapestRoute(
+  flights: Flight[],
+  search: RouteSearchRequest,
+): { route: RouteResult | null; trace: DijkstraTrace } {
+  const trace: DijkstraTrace = {
+    origin: search.origin,
+    destination: search.destination,
+    nodes: [],
+    flights: [],
+    waits: [],
+    start: null,
+    steps: [],
+    path: null,
+  }
+  const legs = dijkstra(
+    flightsInPeriod(flights, search),
+    search.origin,
+    search.destination,
+    trace,
+  )
+  return { route: legs && toRoute(legs), trace }
+}
+
+function flightsInPeriod(flights: Flight[], search: RouteSearchRequest) {
+  return flights.filter(
     (flight) =>
       (!search.departureDate || flight.departureDate >= search.departureDate) &&
       (!search.returnDate || flight.arrivalDate <= search.returnDate),
   )
-  const legs = dijkstra(usable, search.origin, search.destination)
-  if (!legs) return null
+}
 
+function toRoute(legs: Flight[]): RouteResult {
   const price = legs.reduce((total, leg) => total + cents(leg.price), 0)
   return {
     price: price / 100,
@@ -61,6 +97,7 @@ function dijkstra(
   flights: Flight[],
   origin: string,
   destination: string,
+  trace?: DijkstraTrace,
 ): Flight[] | null {
   // Nodes: the days each airport is used. Edges: flights out of each node,
   // and the free wait to the airport's next day.
@@ -74,6 +111,14 @@ function dijkstra(
     const key = nodeKey(flight.origin, flight.departureDate)
     departures.set(key, [...(departures.get(key) ?? []), flight])
   }
+  if (trace) {
+    trace.flights = flights
+    for (const [airport, airportDays] of days) {
+      for (const day of airportDays) {
+        trace.nodes.push({ key: nodeKey(airport, day), airport, day })
+      }
+    }
+  }
   if (!days.has(origin)) return null
 
   const nextDay = new Map<string, { airport: string; day: string }>()
@@ -84,11 +129,16 @@ function dijkstra(
         airport,
         day: ordered[i + 1],
       })
+      trace?.waits.push({
+        from: nodeKey(airport, ordered[i]),
+        to: nodeKey(airport, ordered[i + 1]),
+      })
     }
   }
 
   const startDay = [...days.get(origin)!].sort()[0]
   const start = nodeKey(origin, startDay)
+  if (trace) trace.start = start
   // Best known label of each node, the node's airport, and how it was
   // reached (the previous node and the flight taken, or null for a wait).
   const best = new Map<string, Label>([
@@ -110,9 +160,18 @@ function dijkstra(
     }
     open.delete(node)
     settled.add(node)
-    if (airportOf.get(node) === destination) return legsTo(cameFrom, node)
-
     const label = best.get(node)!
+    const step = trace && {
+      node,
+      cents: label.cents,
+      flights: label.flights,
+      relaxed: [] as DijkstraTrace['steps'][number]['relaxed'],
+    }
+    if (step) trace.steps.push(step)
+    if (airportOf.get(node) === destination) {
+      if (trace) trace.path = pathTo(cameFrom, node)
+      return legsTo(cameFrom, node)
+    }
     const edges: { airport: string; day: string; flight: Flight | null }[] = (
       departures.get(node) ?? []
     ).map((flight) => ({
@@ -132,7 +191,15 @@ function dijkstra(
         day,
       }
       const known = best.get(neighbour)
-      if (!known || before(candidate, known)) {
+      const improved = !known || before(candidate, known)
+      step?.relaxed.push({
+        to: neighbour,
+        flight,
+        cents: candidate.cents,
+        flights: candidate.flights,
+        improved,
+      })
+      if (improved) {
         best.set(neighbour, candidate)
         airportOf.set(neighbour, airport)
         cameFrom.set(neighbour, { node, flight })
@@ -141,6 +208,18 @@ function dijkstra(
     }
   }
   return null
+}
+
+// The nodes from the start to `node`, waits included.
+function pathTo(
+  cameFrom: Map<string, { node: string; flight: Flight | null }>,
+  node: string,
+): string[] {
+  const nodes = [node]
+  for (let step = cameFrom.get(node); step; step = cameFrom.get(step.node)) {
+    nodes.push(step.node)
+  }
+  return nodes.reverse()
 }
 
 // Walk back from the destination, keeping the flights (not the waits).

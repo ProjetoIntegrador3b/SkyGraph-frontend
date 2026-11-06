@@ -8,7 +8,7 @@ import {
   type FormEvent,
 } from 'react'
 import GlobeBoundary from '../components/GlobeBoundary'
-import { AlertIcon, MoonIcon, SunIcon } from '../components/icons'
+import { AlertIcon, GraphIcon, MoonIcon, SunIcon } from '../components/icons'
 import Logo from '../components/Logo'
 import NetworkArt from '../components/NetworkArt'
 import RouteCard from '../components/RouteCard'
@@ -17,10 +17,12 @@ import { fetchAirports } from '../services/airports'
 import { isUsingSampleData, subscribeToSampleData } from '../services/api'
 import { searchRoutes } from '../services/routes'
 import type { Airport } from '../types/airport'
-import type { RouteSearchResponse } from '../types/route'
+import type { RouteSearchRequest, RouteSearchResponse } from '../types/route'
 
 // three.js is large, so the globe downloads only once a route is found.
 const RouteGlobe = lazy(() => import('../components/RouteGlobe'))
+// The step-by-step replay of the search, loaded when it is opened.
+const GraphExplorer = lazy(() => import('../components/GraphExplorer'))
 
 const themeColours = { dark: '#090c18', light: '#f3f0e8' }
 
@@ -37,11 +39,10 @@ export default function Home() {
   // fails; the suggestion dropdown shows a loading state meanwhile.
   const [airportsLoading, setAirportsLoading] = useState(true)
   const [results, setResults] = useState<RouteSearchResponse | null>(null)
-  // The airports of the search that produced `results`. The heading reads
-  // these, not the fields, which may have been edited or swapped since.
-  const [searched, setSearched] = useState<{ from: string; to: string } | null>(
-    null,
-  )
+  // The search that produced `results`. The heading and the graph explorer
+  // read it, not the fields, which may have been edited or swapped since.
+  const [searched, setSearched] = useState<RouteSearchRequest | null>(null)
+  const [exploring, setExploring] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const resultsRef = useRef<HTMLElement>(null)
@@ -125,14 +126,15 @@ export default function Home() {
 
     try {
       // An empty date is left out, keeping that end of the period open.
-      const response = await searchRoutes({
+      const search = {
         origin: from,
         destination: to,
         ...(departureDate && { departureDate }),
         ...(returnDate && { returnDate }),
-      })
+      }
+      const response = await searchRoutes(search)
       setResults(response)
-      setSearched({ from, to })
+      setSearched(search)
     } catch (requestError) {
       setResults(null)
       setSearched(null)
@@ -231,10 +233,23 @@ export default function Home() {
             ref={resultsRef}
           >
             <div className="results__heading">
-              <p className="eyebrow">Resultado</p>
-              <h2 id="results-title">
-                Rota de {searched?.from} para {searched?.to}
-              </h2>
+              <div>
+                <p className="eyebrow">Resultado</p>
+                <h2 id="results-title">
+                  Rota de {searched?.origin} para {searched?.destination}
+                </h2>
+              </div>
+              <button
+                className="graph-button"
+                type="button"
+                onClick={() => setExploring(true)}
+              >
+                <GraphIcon className="graph-button__icon" />
+                <span>
+                  <strong>Ver o grafo da busca</strong>
+                  <small>Dijkstra passo a passo</small>
+                </span>
+              </button>
             </div>
 
             <div
@@ -259,6 +274,23 @@ export default function Home() {
           </section>
         )}
       </main>
+
+      {exploring && searched && results && (
+        <Suspense
+          fallback={
+            <div className="graph-explorer graph-explorer--loading">
+              <p className="graph-explorer__status">Montando o grafo…</p>
+            </div>
+          }
+        >
+          <GraphExplorer
+            search={searched}
+            airports={airports}
+            apiRoute={results.route}
+            onClose={() => setExploring(false)}
+          />
+        </Suspense>
+      )}
 
       <footer className="footer">
         <span>

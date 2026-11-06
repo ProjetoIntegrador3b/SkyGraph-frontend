@@ -5,6 +5,24 @@ import { airports, mockApi } from '../test/api'
 import Home from './Home'
 
 // jsdom has no WebGL; stand in for the globe and expose what it receives.
+// The graph explorer has its own tests; stand in for it here.
+vi.mock('../components/GraphExplorer', () => ({
+  default: ({
+    search,
+    onClose,
+  }: {
+    search: { origin: string; destination: string }
+    onClose: () => void
+  }) => (
+    <div role="dialog" aria-label="Grafo da busca">
+      {search.origin} → {search.destination}
+      <button type="button" onClick={onClose}>
+        Fechar
+      </button>
+    </div>
+  ),
+}))
+
 vi.mock('../components/RouteGlobe', () => ({
   default: ({ route }: { route: { legs: unknown[] } }) => (
     <div data-testid="route-globe" data-legs={route.legs.length} />
@@ -224,6 +242,25 @@ describe('Home', () => {
     await userEvent.click(screen.getByLabelText('Ida'))
     await userEvent.click(screen.getByRole('button', { name: 'Limpar data' }))
     expect(screen.getByText(/^Voos com chegada até 20/)).toBeInTheDocument()
+  })
+
+  it('opens the graph of the search from the results', async () => {
+    mockApi()
+    const user = userEvent.setup()
+    render(<Home />)
+
+    await search()
+    await user.click(
+      await screen.findByRole('button', { name: /Ver o grafo da busca/ }),
+    )
+
+    const dialog = await screen.findByRole('dialog', {
+      name: 'Grafo da busca',
+    })
+    expect(dialog).toHaveTextContent('GRU → JFK')
+
+    await user.click(screen.getByRole('button', { name: 'Fechar' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
   it('shows the 3D globe below a route that was found', async () => {
