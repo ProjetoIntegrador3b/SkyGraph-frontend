@@ -1278,6 +1278,25 @@ h3 {
   border-top: 2px dashed var(--line-strong);
 }
 
+.journey__stops {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.journey__via {
+  margin-right: 2px;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
 .journey__stop {
   padding: 3px 7px;
   border: 1.5px solid var(--role-connection);
