@@ -1845,6 +1845,52 @@ h3 {
   touch-action: none;
 }
 
+.graph-explorer__canvas.is-pannable {
+  cursor: grab;
+}
+
+.graph-explorer__canvas.is-dragging {
+  cursor: grabbing;
+}
+
+/* Zoom controls, over the map's top-right corner. */
+.graph-explorer__zoom {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.graph-explorer__zoom button {
+  display: grid;
+  place-items: center;
+  min-width: 36px;
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: var(--surface-raised);
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.graph-explorer__zoom .graph-explorer__zoom-fit {
+  font-size: 0.72rem;
+}
+
+.graph-explorer__zoom button:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+
+.graph-explorer__zoom button:disabled {
+  opacity: 0.4;
+}
+
 .graph-explorer__status {
   position: absolute;
   inset: 0;

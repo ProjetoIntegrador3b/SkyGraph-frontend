@@ -190,6 +190,60 @@ describe('GraphExplorer', () => {
     expect(onClose).toHaveBeenCalled()
   })
 
+  it('offers slower speeds for following each step', async () => {
+    const user = userEvent.setup()
+    await open()
+
+    const speeds = screen.getByRole('group', { name: 'Velocidade' })
+    expect(
+      within(speeds)
+        .getAllByRole('button')
+        .map((button) => button.textContent),
+    ).toEqual(['0,1×', '0,25×', '0,5×', '1×', '2×', '4×'])
+
+    await user.click(within(speeds).getByRole('button', { name: '0,1×' }))
+
+    expect(
+      within(speeds).getByRole('button', { name: '0,1×' }),
+    ).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('zooms the map with its buttons, the wheel and the keyboard', async () => {
+    const user = userEvent.setup()
+    await open()
+
+    // Only the map zooms.
+    expect(
+      screen.queryByRole('group', { name: 'Zoom do mapa' }),
+    ).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Mapa' }))
+
+    const zoomIn = screen.getByRole('button', { name: 'Aproximar o mapa' })
+    const zoomOut = screen.getByRole('button', { name: 'Afastar o mapa' })
+    const fit = screen.getByRole('button', { name: 'Mostrar o mapa inteiro' })
+    // The whole map shows at first: nothing to zoom out to.
+    expect(zoomOut).toBeDisabled()
+    expect(fit).toBeDisabled()
+
+    await user.click(zoomIn)
+    expect(zoomOut).toBeEnabled()
+    await user.click(fit)
+    expect(zoomOut).toBeDisabled()
+
+    fireEvent.wheel(screen.getByRole('img'), { deltaY: -300 })
+    expect(zoomOut).toBeEnabled()
+    fireEvent.keyDown(document.body, { key: '0' })
+    expect(zoomOut).toBeDisabled()
+    fireEvent.keyDown(document.body, { key: '+' })
+    expect(zoomOut).toBeEnabled()
+
+    // Up to 8×.
+    for (let press = 0; press < 6; press += 1) {
+      fireEvent.keyDown(document.body, { key: '+' })
+    }
+    expect(zoomIn).toBeDisabled()
+  })
+
   it('brings Tab back into the dialog when the focus left it', async () => {
     const user = userEvent.setup()
     // The page behind the modal has controls of its own, first in the

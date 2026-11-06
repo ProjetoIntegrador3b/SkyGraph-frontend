@@ -14,7 +14,12 @@ import {
   buildLayout,
   drawBase,
   drawFrame,
+  MAX_ZOOM,
+  NO_ZOOM,
+  panBy,
   readPalette,
+  zoomAround,
+  type MapZoom,
   type View,
 } from './graphCanvas'
 import { ChevronIcon, CloseIcon, PauseIcon, PlayIcon, SkipIcon } from './icons'
@@ -35,7 +40,11 @@ interface Loaded {
   source: RouteTrace['source']
 }
 
-const SPEEDS = [0.5, 1, 2, 4]
+// 0.1× lets a long search be followed step by step: about 3 steps a second
+// on POA → LHR (441 steps), one every 3 s or so on a short one.
+const SPEEDS = [0.1, 0.25, 0.5, 1, 2, 4]
+// How much one press of + or − zooms the map.
+const ZOOM_STEP = 1.6
 const MONTHS = [
   'jan',
   'fev',
@@ -187,7 +196,11 @@ export default function GraphExplorer({
     return () => observer.disconnect()
   }, [])
 
-  // Where everything goes, recomputed when the size or the view changes.
+  // The map's zoom. Kept when switching to the time graph and back.
+  const [zoom, setZoom] = useState<MapZoom>(NO_ZOOM)
+
+  // Where everything goes, recomputed when the size, the view or the map's
+  // zoom changes.
   const layout = useMemo(() => {
     if (!loaded || size.width < 10 || size.height < 10) return null
     return buildLayout(
@@ -196,8 +209,65 @@ export default function GraphExplorer({
       [...loaded.airports.values()],
       size.width,
       size.height,
+      zoom,
     )
-  }, [loaded, size, view])
+  }, [loaded, size, view, zoom])
+
+  // Zooms the map by `factor` around a point of the stage, by default its
+  // centre.
+  function zoomMap(factor: number, x = size.width / 2, y = size.height / 2) {
+    setZoom((current) =>
+      zoomAround(current, factor, x, y, size.width, size.height),
+    )
+  }
+
+  // The wheel (and a trackpad pinch, which the browser sends as a wheel)
+  // zooms around the pointer. A native listener, because React's is passive
+  // and could not stop the page from scrolling.
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas || view !== 'map') return
+    const listener = (event: WheelEvent) => {
+      event.preventDefault()
+      const lines = event.deltaMode === WheelEvent.DOM_DELTA_LINE ? 16 : 1
+      const box = canvas.getBoundingClientRect()
+      const factor = Math.exp((-event.deltaY * lines) / 500)
+      const { width, height } = box
+      // The nodes move under the pointer; the next move finds the new one.
+      setHover(null)
+      setZoom((current) =>
+        zoomAround(
+          current,
+          factor,
+          event.clientX - box.left,
+          event.clientY - box.top,
+          width,
+          height,
+        ),
+      )
+    }
+    canvas.addEventListener('wheel', listener, { passive: false })
+    return () => canvas.removeEventListener('wheel', listener)
+  }, [view, loaded])
+
+  // Dragging moves a zoomed-in map.
+  const drag = useRef<{ id: number; x: number; y: number } | null>(null)
+  const [dragging, setDragging] = useState(false)
+  const pannable = view === 'map' && zoom.scale > 1
+
+  function handlePointerDown(event: PointerEvent<HTMLCanvasElement>) {
+    if (!pannable || event.button !== 0) return
+    event.currentTarget.setPointerCapture?.(event.pointerId)
+    drag.current = { id: event.pointerId, x: event.clientX, y: event.clientY }
+    setDragging(true)
+    setHover(null)
+  }
+
+  function endDrag(event: PointerEvent<HTMLCanvasElement>) {
+    if (drag.current?.id !== event.pointerId) return
+    drag.current = null
+    setDragging(false)
+  }
 
   // The draw loop reads the latest state and hover from here, so it keeps
   // running across steps instead of restarting on each one.
@@ -287,6 +357,15 @@ export default function GraphExplorer({
     } else if (event.key === ' ' && target.tagName !== 'BUTTON' && !typing) {
       event.preventDefault()
       togglePlay()
+    } else if (view === 'map' && (event.key === '+' || event.key === '=')) {
+      event.preventDefault()
+      zoomMap(ZOOM_STEP)
+    } else if (view === 'map' && event.key === '-') {
+      event.preventDefault()
+      zoomMap(1 / ZOOM_STEP)
+    } else if (view === 'map' && event.key === '0') {
+      event.preventDefault()
+      setZoom(NO_ZOOM)
     }
   }
 
@@ -307,6 +386,14 @@ export default function GraphExplorer({
 
   function handlePointerMove(event: PointerEvent<HTMLCanvasElement>) {
     if (!layout) return
+    const start = drag.current
+    if (start?.id === event.pointerId) {
+      const dx = event.clientX - start.x
+      const dy = event.clientY - start.y
+      drag.current = { ...start, x: event.clientX, y: event.clientY }
+      setZoom((current) => panBy(current, dx, dy, size.width, size.height))
+      return
+    }
     const box = event.currentTarget.getBoundingClientRect()
     const x = event.clientX - box.left
     const y = event.clientY - box.top
@@ -384,16 +471,55 @@ export default function GraphExplorer({
             )}
             <canvas
               ref={canvasRef}
-              className="graph-explorer__canvas"
+              className={`graph-explorer__canvas ${pannable ? 'is-pannable' : ''} ${dragging ? 'is-dragging' : ''}`}
               role="img"
               aria-label={
                 view === 'time'
                   ? 'Grafo expandido no tempo: uma linha por aeroporto, os dias da esquerda para a direita'
                   : 'Mapa dos aeroportos alcançados pela busca'
               }
+              onPointerDown={handlePointerDown}
               onPointerMove={handlePointerMove}
+              onPointerUp={endDrag}
+              onPointerCancel={endDrag}
               onPointerLeave={() => setHover(null)}
             />
+            {view === 'map' && loaded && (
+              <div
+                className="graph-explorer__zoom"
+                role="group"
+                aria-label="Zoom do mapa"
+              >
+                <button
+                  type="button"
+                  onClick={() => zoomMap(ZOOM_STEP)}
+                  disabled={zoom.scale >= MAX_ZOOM}
+                  aria-label="Aproximar o mapa"
+                  title="Aproximar (+ ou roda do mouse)"
+                >
+                  +
+                </button>
+                <button
+                  type="button"
+                  onClick={() => zoomMap(1 / ZOOM_STEP)}
+                  disabled={zoom.scale <= 1}
+                  aria-label="Afastar o mapa"
+                  title="Afastar (−)"
+                >
+                  −
+                </button>
+                <button
+                  type="button"
+                  className="graph-explorer__zoom-fit"
+                  onClick={() => setZoom(NO_ZOOM)}
+                  disabled={zoom.scale <= 1}
+                  aria-label="Mostrar o mapa inteiro"
+                  title="Mapa inteiro (0)"
+                >
+                  Ajustar
+                </button>
+              </div>
+            )}
             {hover && loaded && state && (
               <Tooltip
                 id={hover.id}

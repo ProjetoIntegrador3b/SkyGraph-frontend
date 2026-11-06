@@ -118,16 +118,71 @@ const MONTHS = [
 
 const dayNumber = (day: string) => Date.parse(`${day}T00:00:00Z`) / 86_400_000
 
+// The map's zoom: each point is scaled by `scale`, then shifted by (x, y)
+// pixels. At scale 1 the whole map fits the stage.
+export interface MapZoom {
+  scale: number
+  x: number
+  y: number
+}
+
+export const NO_ZOOM: MapZoom = { scale: 1, x: 0, y: 0 }
+export const MAX_ZOOM = 8
+
+// Keeps the scale in range and the zoomed map covering the whole stage, so
+// panning never uncovers an empty band at an edge.
+export function clampZoom(
+  zoom: MapZoom,
+  width: number,
+  height: number,
+): MapZoom {
+  const scale = Math.min(MAX_ZOOM, Math.max(1, zoom.scale))
+  return {
+    scale,
+    x: Math.min(0, Math.max(width - width * scale, zoom.x)),
+    y: Math.min(0, Math.max(height - height * scale, zoom.y)),
+  }
+}
+
+// Zooms by `factor`, keeping the point under (px, py) where it is.
+export function zoomAround(
+  zoom: MapZoom,
+  factor: number,
+  px: number,
+  py: number,
+  width: number,
+  height: number,
+): MapZoom {
+  const scale = Math.min(MAX_ZOOM, Math.max(1, zoom.scale * factor))
+  const ratio = scale / zoom.scale
+  return clampZoom(
+    { scale, x: px - (px - zoom.x) * ratio, y: py - (py - zoom.y) * ratio },
+    width,
+    height,
+  )
+}
+
+export function panBy(
+  zoom: MapZoom,
+  dx: number,
+  dy: number,
+  width: number,
+  height: number,
+): MapZoom {
+  return clampZoom({ ...zoom, x: zoom.x + dx, y: zoom.y + dy }, width, height)
+}
+
 export function buildLayout(
   view: View,
   trace: DijkstraTrace,
   airports: Airport[],
   width: number,
   height: number,
+  zoom: MapZoom = NO_ZOOM,
 ): Layout {
   return view === 'time'
     ? timeLayout(trace, airports, width, height)
-    : mapLayout(trace, airports, width, height)
+    : mapLayout(trace, airports, width, height, clampZoom(zoom, width, height))
 }
 
 function timeLayout(
@@ -218,6 +273,7 @@ function mapLayout(
   airports: Airport[],
   width: number,
   height: number,
+  zoom: MapZoom,
 ): Layout {
   const pad = 20
   const scale = Math.min(
@@ -226,9 +282,10 @@ function mapLayout(
   )
   const ox = (width - (LON[1] - LON[0]) * scale) / 2
   const oy = (height - (LAT[1] - LAT[0]) * scale) / 2
+  // Zooming moves the points apart; dots, labels and lines keep their size.
   const project = (lon: number, lat: number) => ({
-    x: ox + (lon - LON[0]) * scale,
-    y: oy + (LAT[1] - lat) * scale,
+    x: (ox + (lon - LON[0]) * scale) * zoom.scale + zoom.x,
+    y: (oy + (LAT[1] - lat) * scale) * zoom.scale + zoom.y,
   })
 
   const used = new Set(trace.nodes.map((node) => node.airport))
