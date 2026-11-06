@@ -86,7 +86,7 @@ describe('Home', () => {
 
     expect(
       screen.getByRole('heading', {
-        name: 'Encontre a melhor rota para sua viagem',
+        name: 'Encontre a rota mais barata para sua viagem',
       }),
     ).toBeInTheDocument()
     expect(screen.getByLabelText('Origem')).toBeInTheDocument()

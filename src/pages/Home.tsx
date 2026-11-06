@@ -181,8 +181,9 @@ export default function Home() {
           <div className="hero__copy">
             <p className="eyebrow">Planeje com inteligência</p>
             <h1 id="page-title">
-              Encontre a <span className="hero__highlight">melhor rota</span>{' '}
-              para sua viagem
+              Encontre a{' '}
+              <span className="hero__highlight">rota mais barata</span> para sua
+              viagem
             </h1>
             <p className="hero__description">
               Conecte aeroportos e descubra a rota mais barata para o seu

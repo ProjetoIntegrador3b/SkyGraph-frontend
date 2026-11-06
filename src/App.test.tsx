@@ -8,7 +8,7 @@ describe('App routing', () => {
 
     expect(
       screen.getByRole('heading', {
-        name: 'Encontre a melhor rota para sua viagem',
+        name: 'Encontre a rota mais barata para sua viagem',
       }),
     ).toBeInTheDocument()
   })
@@ -20,7 +20,7 @@ describe('App routing', () => {
     expect(window.location.pathname).toBe('/home')
     expect(
       screen.getByRole('heading', {
-        name: 'Encontre a melhor rota para sua viagem',
+        name: 'Encontre a rota mais barata para sua viagem',
       }),
     ).toBeInTheDocument()
   })
