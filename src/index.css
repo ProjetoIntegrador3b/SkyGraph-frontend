@@ -1963,22 +1963,67 @@ h3 {
   color: var(--danger-text);
 }
 
-.graph-explorer__narrative p {
+/* The sidebar is a column of sections, one under the other, each with a
+   fixed height while the replay runs: a step with a longer text, more
+   edges or a shorter queue changes what is inside a section, never where
+   the sections below it start. */
+.graph-explorer__side > section {
+  flex: none;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.graph-explorer__section-label {
+  margin: 0 0 4px;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+/* "Passo 12 de 441", "Destino alcançado": always one line. */
+.graph-explorer__narrative h3 {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Four lines: the longest step text at the sidebar's desktop width. A
+   longer one scrolls inside its box rather than pushing the rest down. */
+.graph-explorer__narrative p:not(.graph-explorer__section-label) {
+  height: calc(4 * 1.55em);
   margin: 0;
+  overflow-y: auto;
   font-size: 0.9rem;
   line-height: 1.55;
   color: var(--text-muted);
 }
 
+/* Lists with fixed rows: the edges keep room for 4 edges and a "+ N
+   arestas" line, the queue for 5 nodes and a "+ N nós" line. */
 .graph-explorer__edges,
 .graph-explorer__queue ol {
+  --row: 26px;
   display: grid;
+  grid-auto-rows: var(--row);
+  align-content: start;
   gap: 4px;
-  margin: 10px 0 0;
+  margin: 0;
   padding: 0;
   list-style: none;
   font-family: var(--font-mono);
   font-size: 0.76rem;
+}
+
+.graph-explorer__edges {
+  height: calc(5 * var(--row) + 4 * 4px);
+  margin-top: 10px;
+}
+
+.graph-explorer__queue-box {
+  height: calc(6 * 26px + 5 * 4px);
 }
 
 .graph-explorer__edges li,
@@ -1986,9 +2031,12 @@ h3 {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 5px 8px;
+  min-width: 0;
+  padding: 0 8px;
+  overflow: hidden;
   border-radius: 8px;
   background: var(--field-bg);
+  white-space: nowrap;
 }
 
 .graph-explorer__queue li:first-child:not(.graph-explorer__more) {
