@@ -70,11 +70,6 @@ export default function RouteCard({ route, airports }: RouteCardProps) {
         </div>
         <div className="journey__path">
           <span className="journey__line" />
-          {stops.map((code) => (
-            <span className="journey__stop" key={code}>
-              {code}
-            </span>
-          ))}
           <PlaneIcon className="journey__plane" />
           <span className="journey__line" />
         </div>
@@ -82,6 +77,17 @@ export default function RouteCard({ route, airports }: RouteCardProps) {
           <span className="journey__code">{to}</span>
           <span className="journey__city">{cities.get(to) ?? ''}</span>
         </div>
+        {/* A row of its own that wraps: routes have any number of stops. */}
+        {stops.length > 0 && (
+          <div className="journey__stops">
+            <span className="journey__via">via</span>
+            {stops.map((code) => (
+              <span className="journey__stop" key={code}>
+                {code}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       <dl className="route-card__details">
