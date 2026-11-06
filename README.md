@@ -243,13 +243,20 @@ between them. Drag to rotate; scroll or pinch to zoom.
 Under every result, **Ver o grafo da busca** opens a full-screen replay of how
 Dijkstra found the route, step by step.
 
-- **Where the steps come from:** the API returns only the route. So the
-  explorer reruns the same search in the browser, on the bundled sample data
-  (a snapshot of the backend's seed data), with the same Dijkstra the backend
-  runs. The search records each node taken from the queue and each edge
-  relaxed (`traceCheapestRoute` in `src/utils/cheapestRoute.ts`, and the
-  replay in `src/utils/dijkstraTrace.ts`). A badge says whether the replay
-  found the same route as the API.
+- **Where the steps come from:**
+  - **From the backend:** the explorer asks `POST /api/routes/trace` for the
+    search step by step. The backend records them while running its own
+    Dijkstra on its own flights. The badge reads "Passos calculados pelo
+    servidor".
+  - **From the browser:** in mock mode, when the page is on sample data, or
+    when the backend is down or predates that endpoint, the explorer reruns
+    the same search here. It uses the bundled sample data and the same
+    Dijkstra (`traceCheapestRoute` in `src/utils/cheapestRoute.ts`). The badge
+    then says whether this replay found the same route as the API.
+  - **Both agree:** compared on 720 searches, the two traces were identical,
+    including the order of the steps.
+  - **Code:** `src/services/routeTrace.ts` picks the source, and
+    `src/utils/dijkstraTrace.ts` rebuilds the state at any step.
 - **Two views of the same search:**
   - **Grafo no tempo**: the time-expanded graph Dijkstra actually runs on.
     There is one row per airport and days run left to right. A flight is a

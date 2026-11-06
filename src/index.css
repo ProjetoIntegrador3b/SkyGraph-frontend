@@ -1904,6 +1904,14 @@ h3 {
   font-weight: 600;
 }
 
+.graph-explorer__match small {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.74rem;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
 .graph-explorer__match.is-different {
   background: var(--danger-bg);
   color: var(--danger-text);

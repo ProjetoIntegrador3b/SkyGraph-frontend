@@ -285,6 +285,7 @@ export default function Home() {
         >
           <GraphExplorer
             search={searched}
+            airports={airports}
             apiRoute={results.route}
             onClose={() => setExploring(false)}
           />

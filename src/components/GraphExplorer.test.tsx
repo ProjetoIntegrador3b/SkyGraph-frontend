@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import network from '../data/sample-network.json'
 import type { Flight } from '../types/route'
-import { cheapestRoute } from '../utils/cheapestRoute'
+import { cheapestRoute, traceCheapestRoute } from '../utils/cheapestRoute'
 import GraphExplorer from './GraphExplorer'
 
 const search = { origin: 'POA', destination: 'LHR' }
@@ -13,15 +13,24 @@ describe('GraphExplorer', () => {
   beforeEach(() => {
     // jsdom has no canvas; the explorer draws nothing but still works.
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null)
+    vi.stubEnv('VITE_USE_MOCK_API', 'false')
+    // No backend: the explorer reruns the search in the browser.
+    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('offline'))
   })
 
   afterEach(() => {
     vi.restoreAllMocks()
+    vi.unstubAllEnvs()
   })
 
   async function open(apiRoute = route, onClose = vi.fn()) {
     render(
-      <GraphExplorer search={search} apiRoute={apiRoute} onClose={onClose} />,
+      <GraphExplorer
+        search={search}
+        airports={[]}
+        apiRoute={apiRoute}
+        onClose={onClose}
+      />,
     )
     // Loaded once the replay controls are enabled.
     await screen.findByRole('button', { name: 'Ir para o resultado' })
@@ -92,6 +101,40 @@ describe('GraphExplorer', () => {
     expect(
       screen.getByText('✓ Mesmo resultado da busca na API'),
     ).toBeInTheDocument()
+    expect(
+      screen.getByText('Refeito no navegador com os dados de exemplo'),
+    ).toBeInTheDocument()
+  })
+
+  it('shows the steps the backend took when it can', async () => {
+    const { trace } = traceCheapestRoute(network.flights as Flight[], search)
+    vi.mocked(globalThis.fetch).mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          route,
+          trace: {
+            ...trace,
+            steps: trace.steps.map((step) => ({
+              ...step,
+              relaxed: step.relaxed.map((edge) => ({
+                ...edge,
+                flight: edge.flight?.uuid ?? null,
+              })),
+            })),
+          },
+        }),
+      ),
+    )
+
+    await open()
+
+    expect(
+      screen.getByText('✓ Passos calculados pelo servidor'),
+    ).toBeInTheDocument()
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      '/api/routes/trace',
+      expect.objectContaining({ method: 'POST' }),
+    )
   })
 
   it('says so when the API answered differently', async () => {

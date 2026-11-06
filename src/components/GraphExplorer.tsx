@@ -6,10 +6,9 @@ import {
   type KeyboardEvent,
   type PointerEvent,
 } from 'react'
-import { sampleNetwork } from '../services/sampleApi'
+import { fetchRouteTrace, type RouteTrace } from '../services/routeTrace'
 import type { Airport } from '../types/airport'
 import type { RouteResult, RouteSearchRequest } from '../types/route'
-import { traceCheapestRoute } from '../utils/cheapestRoute'
 import {
   airportOfKey,
   dayOf,
@@ -29,6 +28,8 @@ import { ChevronIcon, CloseIcon, PauseIcon, PlayIcon, SkipIcon } from './icons'
 
 interface GraphExplorerProps {
   search: RouteSearchRequest
+  // The airport list the page loaded, to place airports on the map.
+  airports: Airport[]
   // What the API answered, to check the replay against it.
   apiRoute: RouteResult | null
   onClose: () => void
@@ -38,6 +39,7 @@ interface Loaded {
   airports: Map<string, Airport>
   trace: DijkstraTrace
   route: RouteResult | null
+  source: RouteTrace['source']
 }
 
 const SPEEDS = [0.5, 1, 2, 4]
@@ -81,10 +83,12 @@ const reducedMotion = () =>
 const baseRate = (steps: number) => Math.min(40, Math.max(3, steps / 14))
 
 // A modal that replays the cheapest-route search step by step, on the
-// time-expanded graph or on the map. It reruns the search on the bundled
-// sample data with the same Dijkstra the backend uses, recording each step.
+// time-expanded graph or on the map. The steps come from the backend
+// (POST /api/routes/trace), or from the same Dijkstra rerun in the browser
+// on the sample data when the backend can't give them.
 export default function GraphExplorer({
   search,
+  airports,
   apiRoute,
   onClose,
 }: GraphExplorerProps) {
@@ -106,17 +110,19 @@ export default function GraphExplorer({
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [size, setSize] = useState({ width: 0, height: 0 })
 
-  // Load the network and rerun the search, recording it.
+  // Get the search step by step, from the backend or rerun here. The
+  // airport list is read once: a later update must not restart the replay.
+  const [initialAirports] = useState(airports)
   useEffect(() => {
     let active = true
-    sampleNetwork()
-      .then(({ airports, flights }) => {
+    fetchRouteTrace(search, initialAirports)
+      .then(({ route, trace, airports: placed, source }) => {
         if (!active) return
-        const { route, trace } = traceCheapestRoute(flights, search)
         setLoaded({
-          airports: new Map(airports.map((a) => [a.code, a])),
+          airports: new Map(placed.map((a) => [a.code, a])),
           trace,
           route,
+          source,
         })
         if (reducedMotion()) {
           setStep(trace.steps.length - 1)
@@ -129,7 +135,7 @@ export default function GraphExplorer({
     return () => {
       active = false
     }
-  }, [search])
+  }, [search, initialAirports])
 
   // Modal behaviour: focus inside, page behind does not scroll, focus goes
   // back to the button that opened it.
@@ -396,9 +402,18 @@ export default function GraphExplorer({
                   <p
                     className={`graph-explorer__match ${match ? '' : 'is-different'}`}
                   >
-                    {match
-                      ? '✓ Mesmo resultado da busca na API'
-                      : 'Os dados do servidor diferem do snapshot usado aqui'}
+                    {loaded.source === 'server'
+                      ? match
+                        ? '✓ Passos calculados pelo servidor'
+                        : 'Os voos mudaram desde a busca: estes são os passos de agora'
+                      : match
+                        ? '✓ Mesmo resultado da busca na API'
+                        : 'Os dados do servidor diferem do snapshot usado aqui'}
+                    <small>
+                      {loaded.source === 'server'
+                        ? 'O mesmo Dijkstra da busca, com os voos da API'
+                        : 'Refeito no navegador com os dados de exemplo'}
+                    </small>
                   </p>
                 )}
                 <Narrative
