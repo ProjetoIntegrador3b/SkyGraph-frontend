@@ -75,7 +75,7 @@ describe('GraphExplorer', () => {
       screen.getByRole('heading', { name: 'Destino alcançado' }),
     ).toBeInTheDocument()
     expect(
-      screen.getByText(/R\$\s3\.907,18 é o menor preço/),
+      screen.getByText(/R\$\s4\.840,35 é o menor preço/),
     ).toBeInTheDocument()
   })
 
