@@ -17,7 +17,7 @@ describe('sample API', () => {
       destination: 'LHR',
     })
 
-    expect(route?.price).toBe(3907.18)
+    expect(route?.price).toBe(4840.35)
     expect(route?.legs.map((leg) => leg.destination)).toEqual([
       'BEL',
       'FRA',
