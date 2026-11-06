@@ -1475,6 +1475,221 @@ h3 {
   color: var(--text-muted);
 }
 
+/* Every route of the search, below the best one */
+.all-routes {
+  margin-top: 20px;
+}
+
+.all-routes__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 18px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  box-shadow: var(--shadow-md);
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.all-routes__toggle:hover {
+  border-color: var(--accent);
+  box-shadow:
+    var(--shadow-md),
+    0 0 0 4px var(--accent-soft);
+}
+
+.all-routes__chevron {
+  font-size: 1.1rem;
+  transform: rotate(90deg);
+  transition: transform 200ms var(--ease-out);
+}
+
+.all-routes__toggle[aria-expanded='true'] .all-routes__chevron {
+  transform: rotate(-90deg);
+}
+
+.all-routes__panel {
+  margin-top: 16px;
+  padding: 22px 26px 26px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-md);
+  animation: rise 400ms var(--ease-out);
+}
+
+.all-routes__heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px 16px;
+  margin-bottom: 14px;
+}
+
+.all-routes__heading h3 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.all-routes__summary,
+.all-routes__status {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.all-routes__retry {
+  margin-left: auto;
+  padding: 2px 10px;
+  border: 1px solid currentcolor;
+  border-radius: 999px;
+  background: transparent;
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.all-routes__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.all-routes__item + .all-routes__item {
+  border-top: 1px solid var(--line);
+}
+
+.all-routes__route summary {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 4px 14px;
+  padding: 12px 6px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  list-style: none;
+}
+
+.all-routes__route summary::-webkit-details-marker {
+  display: none;
+}
+
+.all-routes__route summary:hover {
+  background: var(--surface-raised);
+}
+
+.all-routes__rank {
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.all-routes__main {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.all-routes__path {
+  font-family: var(--font-mono);
+  font-size: 0.92rem;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.all-routes__meta {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+.all-routes__badge {
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.all-routes__price {
+  grid-column: 4;
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.all-routes__legs {
+  padding: 4px 6px 10px 50px;
+}
+
+.all-routes__more {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  margin-top: 12px;
+  padding: 11px 16px;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  font-weight: 600;
+  transition: border-color 180ms ease;
+}
+
+.all-routes__more:hover {
+  border-color: var(--accent);
+}
+
+.all-routes__left {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-weight: 500;
+}
+
+@media (max-width: 639px) {
+  .all-routes__panel {
+    padding: 18px 16px 20px;
+  }
+
+  .all-routes__route summary {
+    grid-template-columns: 24px minmax(0, 1fr) auto;
+    gap: 6px 10px;
+  }
+
+  .all-routes__badge {
+    grid-column: 2;
+    grid-row: 2;
+    justify-self: start;
+  }
+
+  .all-routes__price {
+    grid-column: 3;
+    grid-row: 1;
+  }
+
+  .all-routes__legs {
+    padding-left: 34px;
+  }
+}
+
 /* The globe sits on its own night panel in either theme. */
 .route-globe {
   --text: #eef0f8;

@@ -1,9 +1,11 @@
 import type { Airport } from '../types/airport'
 import type {
   Flight,
+  RouteListResponse,
   RouteSearchRequest,
   RouteSearchResponse,
 } from '../types/route'
+import { allRoutes } from '../utils/allRoutes'
 import { cheapestRoute } from '../utils/cheapestRoute'
 import { ApiError, errorMessage } from './api'
 
@@ -45,12 +47,8 @@ export async function sampleAirports(): Promise<Airport[]> {
   return airports
 }
 
-export async function sampleRouteSearch(
-  search: RouteSearchRequest,
-): Promise<RouteSearchResponse> {
-  const { airports, flights } = await loadNetwork()
-  await delay(350)
-
+// The same checks as the API: unknown airports and invalid searches.
+function checkSearch(airports: Airport[], search: RouteSearchRequest) {
   const known = new Set(airports.map((airport) => airport.code))
   if (!known.has(search.origin) || !known.has(search.destination)) {
     throw new ApiError(404, errorMessage(404))
@@ -63,6 +61,22 @@ export async function sampleRouteSearch(
   ) {
     throw new ApiError(422, errorMessage(422))
   }
+}
 
+export async function sampleRouteSearch(
+  search: RouteSearchRequest,
+): Promise<RouteSearchResponse> {
+  const { airports, flights } = await loadNetwork()
+  await delay(350)
+  checkSearch(airports, search)
   return { route: cheapestRoute(flights, search) }
+}
+
+export async function sampleAllRoutes(
+  search: RouteSearchRequest,
+): Promise<RouteListResponse> {
+  const { airports, flights } = await loadNetwork()
+  await delay(350)
+  checkSearch(airports, search)
+  return allRoutes(flights, search)
 }

@@ -7,6 +7,7 @@ import {
   useSyncExternalStore,
   type FormEvent,
 } from 'react'
+import AllRoutes from '../components/AllRoutes'
 import GlobeBoundary from '../components/GlobeBoundary'
 import { AlertIcon, GraphIcon, MoonIcon, SunIcon } from '../components/icons'
 import Logo from '../components/Logo'
@@ -180,8 +181,9 @@ export default function Home() {
           <div className="hero__copy">
             <p className="eyebrow">Planeje com inteligência</p>
             <h1 id="page-title">
-              Encontre a <span className="hero__highlight">melhor rota</span>{' '}
-              para sua viagem
+              Encontre a{' '}
+              <span className="hero__highlight">rota mais barata</span> para sua
+              viagem
             </h1>
             <p className="hero__description">
               Conecte aeroportos e descubra a rota mais barata para o seu
@@ -271,6 +273,16 @@ export default function Home() {
                 </GlobeBoundary>
               )}
             </div>
+
+            {/* Without a cheapest route there is no route at all. Keyed by the
+                search, so a new search closes the list and loads it again. */}
+            {results.route && searched && (
+              <AllRoutes
+                key={JSON.stringify(searched)}
+                search={searched}
+                airports={airports}
+              />
+            )}
           </section>
         )}
       </main>

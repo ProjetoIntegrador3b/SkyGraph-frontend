@@ -86,7 +86,7 @@ describe('Home', () => {
 
     expect(
       screen.getByRole('heading', {
-        name: 'Encontre a melhor rota para sua viagem',
+        name: 'Encontre a rota mais barata para sua viagem',
       }),
     ).toBeInTheDocument()
     expect(screen.getByLabelText('Origem')).toBeInTheDocument()
@@ -263,6 +263,23 @@ describe('Home', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
+  it('lists every route below the best one', async () => {
+    const fetch = mockApi()
+    const user = userEvent.setup()
+    render(<Home />)
+
+    await search()
+    await user.click(
+      await screen.findByRole('button', { name: /Ver todas as rotas/ }),
+    )
+
+    const list = await screen.findByRole('list', { name: 'Rotas possíveis' })
+    expect(list.children).toHaveLength(2)
+    // The same search as the best route.
+    const call = fetch.mock.calls.find(([url]) => url === '/api/routes/all')
+    expect(JSON.parse(String(call?.[1]?.body))).toEqual(sentSearch(fetch))
+  })
+
   it('shows the 3D globe below a route that was found', async () => {
     mockApi()
     render(<Home />)
@@ -285,6 +302,14 @@ describe('Home', () => {
     expect(within(legs).getAllByRole('listitem')).toHaveLength(3)
     expect(screen.getByText('2 conexões')).toBeInTheDocument()
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+
+    // Every route too, from the same sample data.
+    await userEvent.click(
+      screen.getByRole('button', { name: /Ver todas as rotas/ }),
+    )
+    expect(
+      await screen.findByText(/^382 rotas de POA para LHR/),
+    ).toBeInTheDocument()
   })
 
   it('keeps the heading on the searched route when the fields change', async () => {
@@ -313,6 +338,9 @@ describe('Home', () => {
 
     await screen.findByText(/Nenhuma rota disponível/)
     expect(screen.queryByTestId('route-globe')).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: /Ver todas as rotas/ }),
+    ).not.toBeInTheDocument()
   })
 
   it('shows the airports loading until a slow server answers', async () => {
